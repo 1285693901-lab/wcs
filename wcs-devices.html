@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环线WCS物流跟踪 - 设备管理</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #061018 0%, #0d2840 50%, #081525 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styles */
+        .header {
+            background: linear-gradient(90deg, rgba(0, 50, 100, 0.9) 0%, rgba(0, 70, 140, 0.85) 50%, rgba(0, 50, 100, 0.9) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            border-radius: 12px;
+            padding: 20px 40px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+            height: 110px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(0, 180, 255, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        .tech-circuit {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.15;
+            pointer-events: none;
+            background-image:
+                linear-gradient(90deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%),
+                linear-gradient(0deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%);
+            background-size: 100px 100px;
+        }
+
+        .tech-dots {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, rgba(0, 180, 255, 0.4) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.3;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00b4ff, transparent);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.5), transparent);
+        }
+
+        .corner {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-color: #00b4ff;
+            border-style: solid;
+        }
+
+        .corner-tl { top: 5px; left: 5px; border-width: 2px 0 0 2px; }
+        .corner-tr { top: 5px; right: 5px; border-width: 2px 2px 0 0; }
+        .corner-bl { bottom: 5px; left: 5px; border-width: 0 0 2px 2px; }
+        .corner-br { bottom: 5px; right: 5px; border-width: 0 2px 2px 0; }
+
+        .tech-corner-decor {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(0, 180, 255, 0.4);
+        }
+
+        .corner-decor-tl { top: 8px; left: 8px; border-right: none; border-bottom: none; }
+        .corner-decor-tr { top: 8px; right: 8px; border-left: none; border-bottom: none; }
+        .corner-decor-bl { bottom: 8px; left: 8px; border-right: none; border-top: none; }
+        .corner-decor-br { bottom: 8px; right: 8px; border-left: none; border-top: none; }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 600;
+            text-align: center;
+            color: #ffffff;
+            letter-spacing: 8px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 0 40px rgba(0, 180, 255, 0.8), 0 0 80px rgba(0, 180, 255, 0.4);
+        }
+
+        .header-subtitle {
+            text-align: center;
+            color: rgba(0, 180, 255, 0.6);
+            font-size: 14px;
+            margin-top: 8px;
+            letter-spacing: 4px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .header-subtitle::before,
+        .header-subtitle::after {
+            content: '';
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.5));
+        }
+
+        .header-subtitle::after {
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.5), transparent);
+        }
+
+        /* Navigation Buttons */
+        .nav-buttons {
+            position: absolute;
+            top: calc(68% + 8px);
+            left: 50%;
+            transform: translate(calc(-50% - 416px), -50%);
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            background: rgba(0, 60, 100, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 100, 150, 0.6);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.3);
+        }
+
+        .nav-btn.active {
+            background: rgba(0, 180, 255, 0.25);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #00b4ff;
+            font-weight: 600;
+            box-shadow: 0 0 20px rgba(0, 180, 255, 0.4);
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            padding: 15px 20px;
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            background: rgba(0, 60, 100, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            outline: none;
+            min-width: 120px;
+        }
+
+        .filter-select:focus {
+            border-color: rgba(0, 180, 255, 0.6);
+            box-shadow: 0 0 10px rgba(0, 180, 255, 0.2);
+        }
+
+        .filter-select option {
+            background: #0d2840;
+            color: #fff;
+        }
+
+        .filter-btn {
+            padding: 8px 20px;
+            background: linear-gradient(135deg, #00b4ff, #0088ff);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: auto;
+        }
+
+        .filter-btn:hover {
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.5);
+        }
+
+        /* Device Grid */
+        .device-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .device-card {
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .device-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 180, 255, 0.2);
+            border-color: rgba(0, 180, 255, 0.5);
+        }
+
+        .device-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--status-color, #00ff88);
+        }
+
+        .device-card.running { --status-color: #00ff88; }
+        .device-card.standby { --status-color: #ffaa00; }
+        .device-card.fault { --status-color: #ff4444; }
+        .device-card.offline { --status-color: #666; }
+
+        .device-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .device-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(var(--rgb-color, 0, 255, 136), 0.15);
+            border: 1px solid rgba(var(--rgb-color, 0, 255, 136), 0.3);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .device-icon svg {
+            width: 28px;
+            height: 28px;
+            fill: var(--status-color, #00ff88);
+        }
+
+        .device-info {
+            flex: 1;
+        }
+
+        .device-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .device-type {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .device-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(var(--rgb-color, 0, 255, 136), 0.15);
+            color: var(--status-color, #00ff88);
+            border: 1px solid rgba(var(--rgb-color, 0, 255, 136), 0.3);
+        }
+
+        .device-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(0, 180, 255, 0.1);
+        }
+
+        .device-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .device-stat-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .device-stat-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .device-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .device-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            background: rgba(0, 60, 100, 0.6);
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .device-btn:hover {
+            background: rgba(0, 180, 255, 0.2);
+            border-color: rgba(0, 180, 255, 0.5);
+            color: #fff;
+        }
+
+        .device-btn.primary {
+            background: linear-gradient(135deg, #00b4ff, #0088ff);
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .device-btn.primary:hover {
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.5);
+        }
+
+        .device-btn.danger {
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .device-btn.danger:hover {
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: linear-gradient(145deg, rgba(0, 50, 100, 0.95) 0%, rgba(0, 30, 60, 0.98) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            border-radius: 16px;
+            width: 600px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.15) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 68, 68, 0.3);
+            border-color: rgba(255, 68, 68, 0.5);
+        }
+
+        .modal-close svg {
+            width: 16px;
+            height: 16px;
+            fill: #fff;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            max-height: calc(90vh - 140px);
+        }
+
+        .device-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .detail-item {
+            background: rgba(0, 40, 80, 0.5);
+            border: 1px solid rgba(0, 180, 255, 0.15);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .detail-value.status-running { color: #00ff88; }
+        .detail-value.status-standby { color: #ffaa00; }
+        .detail-value.status-fault { color: #ff4444; }
+        .detail-value.status-offline { color: #666; }
+
+        .chart-container {
+            height: 200px;
+            margin-bottom: 24px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(135deg, #00b4ff, #0088ff);
+            color: #fff;
+        }
+
+        .modal-btn.primary:hover {
+            box-shadow: 0 0 20px rgba(0, 180, 255, 0.5);
+        }
+
+        .modal-btn.danger {
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: #fff;
+        }
+
+        .modal-btn.danger:hover {
+            box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+        }
+
+        .modal-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 40, 80, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 180, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 180, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-bg"></div>
+            <div class="tech-circuit"></div>
+            <div class="tech-dots"></div>
+            <div class="tech-corner-decor corner-decor-tl"></div>
+            <div class="tech-corner-decor corner-decor-tr"></div>
+            <div class="tech-corner-decor corner-decor-bl"></div>
+            <div class="tech-corner-decor corner-decor-br"></div>
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+
+            <div class="nav-buttons">
+                <a href="wcs-dashboard.html" class="nav-btn">环线总览</a>
+                <a href="wcs-tasks.html" class="nav-btn">任务监控</a>
+                <a href="wcs-devices.html" class="nav-btn active">设备管理</a>
+            </div>
+            <h1>环线WCS物流跟踪系统</h1>
+            <div class="header-subtitle">DEVICE MANAGER</div>
+        </header>
+
+        <div class="main-content">
+            <!-- Filter Bar -->
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <span class="filter-label">设备类型:</span>
+                    <select class="filter-select" id="typeFilter">
+                        <option value="">全部</option>
+                        <option value="rgv">穿梭车</option>
+                        <option value="lifter">提升机</option>
+                        <option value="conveyor">传送带</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <span class="filter-label">设备状态:</span>
+                    <select class="filter-select" id="statusFilter">
+                        <option value="">全部</option>
+                        <option value="running">运行中</option>
+                        <option value="standby">待机</option>
+                        <option value="fault">故障</option>
+                        <option value="offline">离线</option>
+                    </select>
+                </div>
+                <button class="filter-btn" onclick="applyFilters()">应用筛选</button>
+            </div>
+
+            <!-- Device Grid -->
+            <div class="device-grid" id="deviceGrid">
+                <!-- Devices will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Device Detail Modal -->
+    <div class="modal-overlay" id="deviceModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">设备详情</div>
+                <div class="modal-close" onclick="closeModal()">
+                    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="device-detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">设备名称</div>
+                        <div class="detail-value" id="modalDeviceName">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">设备类型</div>
+                        <div class="detail-value" id="modalDeviceType">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">当前状态</div>
+                        <div class="detail-value" id="modalDeviceStatus">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">当前位置</div>
+                        <div class="detail-value" id="modalDevicePosition">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">累计里程</div>
+                        <div class="detail-value" id="modalDeviceMileage">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">运行时长</div>
+                        <div class="detail-value" id="modalDeviceRuntime">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">最后通讯</div>
+                        <div class="detail-value" id="modalDeviceLastComm">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">IP地址</div>
+                        <div class="detail-value" id="modalDeviceIP">-</div>
+                    </div>
+                </div>
+                <div class="chart-container" id="deviceChart"></div>
+                <div class="modal-actions">
+                    <button class="modal-btn primary" onclick="restartDevice()">重启设备</button>
+                    <button class="modal-btn danger" onclick="pauseDevice()">暂停运行</button>
+                    <button class="modal-btn secondary" onclick="closeModal()">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock Data
+        const devicesData = [
+            { id: 'RGV-01', name: '穿梭车-01', type: 'rgv', typeName: '穿梭车', status: 'running', position: '环线-A段', mileage: 12456, runtime: '2,456小时', lastComm: '2024-03-23 14:32:15', ip: '192.168.1.101' },
+            { id: 'RGV-02', name: '穿梭车-02', type: 'rgv', typeName: '穿梭车', status: 'running', position: '环线-B段', mileage: 9876, runtime: '1,876小时', lastComm: '2024-03-23 14:31:42', ip: '192.168.1.102' },
+            { id: 'RGV-03', name: '穿梭车-03', type: 'rgv', typeName: '穿梭车', status: 'standby', position: '入库区', mileage: 15234, runtime: '3,234小时', lastComm: '2024-03-23 14:30:18', ip: '192.168.1.103' },
+            { id: 'RGV-04', name: '穿梭车-04', type: 'rgv', typeName: '穿梭车', status: 'running', position: '环线-C段', mileage: 8765, runtime: '1,765小时', lastComm: '2024-03-23 14:32:01', ip: '192.168.1.104' },
+            { id: 'RGV-05', name: '穿梭车-05', type: 'rgv', typeName: '穿梭车', status: 'fault', position: '维修区', mileage: 23456, runtime: '4,456小时', lastComm: '2024-03-23 14:25:33', ip: '192.168.1.105' },
+            { id: 'RGV-06', name: '穿梭车-06', type: 'rgv', typeName: '穿梭车', status: 'running', position: '环线-D段', mileage: 11234, runtime: '2,234小时', lastComm: '2024-03-23 14:31:55', ip: '192.168.1.106' },
+            { id: 'RGV-07', name: '穿梭车-07', type: 'rgv', typeName: '穿梭车', status: 'running', position: '环线-E段', mileage: 7654, runtime: '1,654小时', lastComm: '2024-03-23 14:32:08', ip: '192.168.1.107' },
+            { id: 'RGV-08', name: '穿梭车-08', type: 'rgv', typeName: '穿梭车', status: 'standby', position: '缓存区', mileage: 18987, runtime: '3,987小时', lastComm: '2024-03-23 14:28:22', ip: '192.168.1.108' },
+            { id: 'LIFT-01', name: '提升机-01', type: 'lifter', typeName: '提升机', status: 'running', position: '入库提升', mileage: 5678, runtime: '1,678小时', lastComm: '2024-03-23 14:32:10', ip: '192.168.1.201' },
+            { id: 'LIFT-02', name: '提升机-02', type: 'lifter', typeName: '提升机', status: 'running', position: '出库提升', mileage: 6234, runtime: '1,834小时', lastComm: '2024-03-23 14:31:58', ip: '192.168.1.202' },
+            { id: 'CONV-01', name: '传送带-01', type: 'conveyor', typeName: '传送带', status: 'running', position: '入库线', mileage: 0, runtime: '2,100小时', lastComm: '2024-03-23 14:32:12', ip: '192.168.1.301' },
+            { id: 'CONV-02', name: '传送带-02', type: 'conveyor', typeName: '传送带', status: 'fault', position: '分拣线', mileage: 0, runtime: '1,900小时', lastComm: '2024-03-23 14:20:45', ip: '192.168.1.302' },
+        ];
+
+        let filteredDevices = [...devicesData];
+        let selectedDevice = null;
+        let deviceChart = null;
+
+        // Get status color
+        function getStatusColor(status) {
+            const colors = {
+                running: [0, 255, 136],
+                standby: [255, 170, 0],
+                fault: [255, 68, 68],
+                offline: [102, 102, 102]
+            };
+            return colors[status] || [0, 180, 255];
+        }
+
+        function getStatusText(status) {
+            const map = { running: '运行中', standby: '待机', fault: '故障', offline: '离线' };
+            return map[status] || status;
+        }
+
+        function getDeviceIcon(type) {
+            const icons = {
+                rgv: '<svg viewBox="0 0 24 24"><path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/></svg>',
+                lifter: '<svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>',
+                conveyor: '<svg viewBox="0 0 24 24"><path d="M4 15h16v-2H4v2zm0 4h16v-2H4v2zm0-8h16V9H4v2zm0-6v2h16V5H4z"/></svg>'
+            };
+            return icons[type] || icons.rgv;
+        }
+
+        // Render Device Grid
+        function renderDeviceGrid() {
+            const grid = document.getElementById('deviceGrid');
+            
+            grid.innerHTML = filteredDevices.map(device => {
+                const rgbColor = getStatusColor(device.status);
+                const colorStr = `rgb(${rgbColor.join(',')})`;
+                
+                return `
+                    <div class="device-card ${device.status}" 
+                         style="--status-color: ${colorStr}; --rgb-color: ${rgbColor.join(',')};"
+                         onclick="showDeviceModal('${device.id}')">
+                        <div class="device-header">
+                            <div class="device-icon">
+                                ${getDeviceIcon(device.type)}
+                            </div>
+                            <div class="device-info">
+                                <div class="device-name">${device.name}</div>
+                                <div class="device-type">${device.typeName}</div>
+                            </div>
+                            <div class="device-status" style="--rgb-color: ${rgbColor.join(',')}">
+                                ${getStatusText(device.status)}
+                            </div>
+                        </div>
+                        <div class="device-stats">
+                            <div class="device-stat">
+                                <span class="device-stat-label">累计里程</span>
+                                <span class="device-stat-value">${device.mileage > 0 ? device.mileage.toLocaleString() + ' km' : '-'}</span>
+                            </div>
+                            <div class="device-stat">
+                                <span class="device-stat-label">运行时长</span>
+                                <span class="device-stat-value">${device.runtime}</span>
+                            </div>
+                            <div class="device-stat">
+                                <span class="device-stat-label">当前位置</span>
+                                <span class="device-stat-value">${device.position}</span>
+                            </div>
+                            <div class="device-stat">
+                                <span class="device-stat-label">最后通讯</span>
+                                <span class="device-stat-value">${device.lastComm.split(' ')[1]}</span>
+                            </div>
+                        </div>
+                        <div class="device-actions" onclick="event.stopPropagation()">
+                            <button class="device-btn" onclick="showDeviceModal('${device.id}')">查看详情</button>
+                            <button class="device-btn primary" onclick="restartDeviceById('${device.id}')">重启</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Apply Filters
+        function applyFilters() {
+            const typeFilter = document.getElementById('typeFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            filteredDevices = devicesData.filter(device => {
+                const typeMatch = !typeFilter || device.type === typeFilter;
+                const statusMatch = !statusFilter || device.status === statusFilter;
+                return typeMatch && statusMatch;
+            });
+
+            renderDeviceGrid();
+        }
+
+        // Show Device Modal
+        function showDeviceModal(deviceId) {
+            selectedDevice = devicesData.find(d => d.id === deviceId);
+            if (!selectedDevice) return;
+
+            document.getElementById('modalTitle').textContent = selectedDevice.name;
+            document.getElementById('modalDeviceName').textContent = selectedDevice.name;
+            document.getElementById('modalDeviceType').textContent = selectedDevice.typeName;
+            document.getElementById('modalDeviceStatus').textContent = getStatusText(selectedDevice.status);
+            document.getElementById('modalDeviceStatus').className = `detail-value status-${selectedDevice.status}`;
+            document.getElementById('modalDevicePosition').textContent = selectedDevice.position;
+            document.getElementById('modalDeviceMileage').textContent = selectedDevice.mileage > 0 ? selectedDevice.mileage.toLocaleString() + ' km' : '-';
+            document.getElementById('modalDeviceRuntime').textContent = selectedDevice.runtime;
+            document.getElementById('modalDeviceLastComm').textContent = selectedDevice.lastComm;
+            document.getElementById('modalDeviceIP').textContent = selectedDevice.ip;
+
+            document.getElementById('deviceModal').classList.add('active');
+
+            // Initialize chart
+            setTimeout(() => {
+                initDeviceChart();
+            }, 100);
+        }
+
+        // Initialize Device Chart
+        function initDeviceChart() {
+            if (deviceChart) {
+                deviceChart.dispose();
+            }
+
+            deviceChart = echarts.init(document.getElementById('deviceChart'));
+
+            // Mock historical data
+            const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+            const data = Array.from({ length: 24 }, () => Math.floor(Math.random() * 50) + 20);
+
+            deviceChart.setOption({
+                backgroundColor: 'transparent',
+                title: {
+                    text: '24小时运行效率',
+                    left: 'center',
+                    textStyle: {
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        fontSize: 14
+                    }
+                },
+                grid: {
+                    left: 50,
+                    right: 20,
+                    top: 40,
+                    bottom: 30
+                },
+                xAxis: {
+                    type: 'category',
+                    data: hours,
+                    axisLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.2)' } },
+                    axisLabel: { 
+                        color: 'rgba(255, 255, 255, 0.6)', 
+                        fontSize: 10,
+                        interval: 3
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '%',
+                    nameTextStyle: { color: 'rgba(255, 255, 255, 0.6)' },
+                    splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)' } },
+                    axisLabel: { color: 'rgba(255, 255, 255, 0.6)', fontSize: 10 }
+                },
+                series: [{
+                    type: 'line',
+                    data: data,
+                    smooth: true,
+                    symbol: 'circle',
+                    symbolSize: 4,
+                    lineStyle: { 
+                        color: '#00b4ff', 
+                        width: 2 
+                    },
+                    itemStyle: { color: '#00b4ff' },
+                    areaStyle: {
+                        color: {
+                            type: 'linear',
+                            x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [
+                                { offset: 0, color: 'rgba(0, 180, 255, 0.3)' },
+                                { offset: 1, color: 'rgba(0, 180, 255, 0)' }
+                            ]
+                        }
+                    }
+                }],
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(0, 40, 80, 0.9)',
+                    borderColor: 'rgba(0, 180, 255, 0.3)',
+                    textStyle: { color: '#fff' },
+                    formatter: '{b}: {c}%'
+                }
+            });
+        }
+
+        // Close Modal
+        function closeModal() {
+            document.getElementById('deviceModal').classList.remove('active');
+            if (deviceChart) {
+                deviceChart.dispose();
+                deviceChart = null;
+            }
+        }
+
+        // Device Actions
+        function restartDevice() {
+            if (selectedDevice) {
+                alert(`正在重启 ${selectedDevice.name}...`);
+                selectedDevice.status = 'running';
+                selectedDevice.lastComm = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                renderDeviceGrid();
+                closeModal();
+            }
+        }
+
+        function restartDeviceById(deviceId) {
+            event.stopPropagation();
+            const device = devicesData.find(d => d.id === deviceId);
+            if (device) {
+                alert(`正在重启 ${device.name}...`);
+                device.status = 'running';
+                device.lastComm = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                renderDeviceGrid();
+            }
+        }
+
+        function pauseDevice() {
+            if (selectedDevice) {
+                alert(`已暂停 ${selectedDevice.name}`);
+                selectedDevice.status = 'standby';
+                renderDeviceGrid();
+                closeModal();
+            }
+        }
+
+        // Simulate device status changes
+        function simulateDeviceChanges() {
+            const statuses = ['running', 'standby', 'fault', 'offline'];
+            
+            // Randomly change a device status
+            const randomDevice = devicesData[Math.floor(Math.random() * devicesData.length)];
+            if (Math.random() > 0.7) {
+                randomDevice.status = statuses[Math.floor(Math.random() * statuses.length)];
+                randomDevice.lastComm = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                applyFilters();
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderDeviceGrid();
+            
+            // Simulate changes every 10 seconds
+            setInterval(simulateDeviceChanges, 10000);
+        });
+
+        // Close modal on overlay click
+        document.getElementById('deviceModal').addEventListener('click', (e) => {
+            if (e.target.id === 'deviceModal') {
+                closeModal();
+            }
+        });
+
+        // Resize chart on window resize
+        window.addEventListener('resize', () => {
+            if (deviceChart) {
+                deviceChart.resize();
+            }
+        });
+    </script>
+</body>
+</html>

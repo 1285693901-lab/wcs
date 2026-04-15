@@ -1,0 +1,2251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环线WCS物流跟踪 - 总览</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #061018 0%, #0d2840 50%, #081525 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styles */
+        .header {
+            background: linear-gradient(90deg, rgba(0, 50, 100, 0.9) 0%, rgba(0, 70, 140, 0.85) 50%, rgba(0, 50, 100, 0.9) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            border-radius: 12px;
+            padding: 20px 40px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+            height: 110px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(0, 180, 255, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        .tech-circuit {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.15;
+            pointer-events: none;
+            background-image:
+                linear-gradient(90deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%),
+                linear-gradient(0deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%);
+            background-size: 100px 100px;
+        }
+
+        .tech-dots {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, rgba(0, 180, 255, 0.4) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.3;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00b4ff, transparent);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.5), transparent);
+        }
+
+        .corner {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-color: #00b4ff;
+            border-style: solid;
+        }
+
+        .corner-tl { top: 5px; left: 5px; border-width: 2px 0 0 2px; }
+        .corner-tr { top: 5px; right: 5px; border-width: 2px 2px 0 0; }
+        .corner-bl { bottom: 5px; left: 5px; border-width: 0 0 2px 2px; }
+        .corner-br { bottom: 5px; right: 5px; border-width: 0 2px 2px 0; }
+
+        .tech-corner-decor {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(0, 180, 255, 0.4);
+        }
+
+        .corner-decor-tl { top: 8px; left: 8px; border-right: none; border-bottom: none; }
+        .corner-decor-tr { top: 8px; right: 8px; border-left: none; border-bottom: none; }
+        .corner-decor-bl { bottom: 8px; left: 8px; border-right: none; border-top: none; }
+        .corner-decor-br { bottom: 8px; right: 8px; border-left: none; border-top: none; }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 600;
+            text-align: center;
+            color: #ffffff;
+            letter-spacing: 8px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 0 40px rgba(0, 180, 255, 0.8), 0 0 80px rgba(0, 180, 255, 0.4);
+        }
+
+        .header-subtitle {
+            text-align: center;
+            color: rgba(0, 180, 255, 0.6);
+            font-size: 14px;
+            margin-top: 8px;
+            letter-spacing: 4px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .header-subtitle::before,
+        .header-subtitle::after {
+            content: '';
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.5));
+        }
+
+        .header-subtitle::after {
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.5), transparent);
+        }
+
+        /* Navigation Buttons */
+        .nav-buttons {
+            position: absolute;
+            top: calc(68% + 8px);
+            left: 50%;
+            transform: translate(calc(-50% - 416px), -50%);
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            background: rgba(0, 60, 100, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 100, 150, 0.6);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.3);
+        }
+
+        .nav-btn.active {
+            background: rgba(0, 180, 255, 0.25);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #00b4ff;
+            font-weight: 600;
+            box-shadow: 0 0 20px rgba(0, 180, 255, 0.4);
+        }
+
+        /* Main Content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .left-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* KPI Cards */
+        .kpi-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            height: 120px;
+        }
+
+        .kpi-card {
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--accent-color, #00b4ff);
+        }
+
+        .kpi-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .kpi-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(var(--rgb-color, 0, 180, 255), 0.15);
+            border: 1px solid rgba(var(--rgb-color, 0, 180, 255), 0.3);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kpi-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--accent-color, #00b4ff);
+        }
+
+        .kpi-title {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 1px;
+        }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent-color, #00b4ff);
+            text-shadow: 0 0 20px rgba(var(--rgb-color, 0, 180, 255), 0.5);
+        }
+
+        .kpi-unit {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-left: 4px;
+        }
+
+        .kpi-trend {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .kpi-trend.up { color: #00ff88; }
+        .kpi-trend.down { color: #ff6b6b; }
+
+        /* RGV Track Map */
+        .rgv-map-container {
+            flex: 1;
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rgv-map-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.15);
+        }
+
+        .rgv-map-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 180, 255, 0.15);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .rgv-map-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: #00b4ff;
+        }
+
+        .rgv-map-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 2px;
+        }
+
+        .rgv-legend {
+            margin-left: auto;
+            display: flex;
+            gap: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.running { background: #00ff88; box-shadow: 0 0 8px #00ff88; }
+        .legend-dot.standby { background: #ffaa00; box-shadow: 0 0 8px #ffaa00; }
+        .legend-dot.fault { background: #ff4444; box-shadow: 0 0 8px #ff4444; }
+
+        #rgvMap {
+            width: 100%;
+            height: calc(100% - 70px);
+        }
+
+        /* Right Panel - Alerts */
+        .right-panel {
+            background: linear-gradient(145deg, rgba(0, 50, 100, 0.75) 0%, rgba(0, 30, 60, 0.85) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 16px 20px;
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.15) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .panel-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 68, 68, 0.15);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .panel-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: #ff4444;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 2px;
+        }
+
+        .alert-count {
+            margin-left: auto;
+            background: rgba(255, 68, 68, 0.2);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            color: #ff4444;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .alert-item {
+            background: rgba(0, 30, 60, 0.5);
+            border: 1px solid rgba(0, 180, 255, 0.15);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .alert-item:hover {
+            background: rgba(0, 60, 100, 0.5);
+            border-color: rgba(0, 180, 255, 0.4);
+            transform: translateX(4px);
+        }
+
+        .alert-item.fault {
+            border-left: 3px solid #ff4444;
+        }
+
+        .alert-item.warning {
+            border-left: 3px solid #ffaa00;
+        }
+
+        .alert-item.info {
+            border-left: 3px solid #00b4ff;
+        }
+
+        .alert-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .alert-level {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .alert-level.fault {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+        }
+
+        .alert-level.warning {
+            background: rgba(255, 170, 0, 0.2);
+            color: #ffaa00;
+        }
+
+        .alert-level.info {
+            background: rgba(0, 180, 255, 0.2);
+            color: #00b4ff;
+        }
+
+        .alert-time {
+            margin-left: auto;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .alert-device {
+            font-size: 13px;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .alert-message {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.4;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: linear-gradient(145deg, rgba(0, 50, 100, 0.95) 0%, rgba(0, 30, 60, 0.98) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            border-radius: 16px;
+            width: 500px;
+            max-width: 90%;
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.15) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 68, 68, 0.3);
+            border-color: rgba(255, 68, 68, 0.5);
+        }
+
+        .modal-close svg {
+            width: 16px;
+            height: 16px;
+            fill: #fff;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .device-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .info-item {
+            background: rgba(0, 40, 80, 0.5);
+            border: 1px solid rgba(0, 180, 255, 0.15);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .info-value.status-running { color: #00ff88; }
+        .info-value.status-standby { color: #ffaa00; }
+        .info-value.status-fault { color: #ff4444; }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(135deg, #00b4ff, #0088ff);
+            color: #fff;
+        }
+
+        .modal-btn.primary:hover {
+            box-shadow: 0 0 20px rgba(0, 180, 255, 0.5);
+        }
+
+        .modal-btn.danger {
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: #fff;
+        }
+
+        .modal-btn.danger:hover {
+            box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+        }
+
+        .modal-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 40, 80, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 180, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 180, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-bg"></div>
+            <div class="tech-circuit"></div>
+            <div class="tech-dots"></div>
+            <div class="tech-corner-decor corner-decor-tl"></div>
+            <div class="tech-corner-decor corner-decor-tr"></div>
+            <div class="tech-corner-decor corner-decor-bl"></div>
+            <div class="tech-corner-decor corner-decor-br"></div>
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+
+            <div class="nav-buttons">
+                <a href="wcs-dashboard.html" class="nav-btn active">环线总览</a>
+                <a href="wcs-tasks.html" class="nav-btn">任务监控</a>
+                <a href="wcs-devices.html" class="nav-btn">设备管理</a>
+            </div>
+            <h1>环线WCS物流跟踪系统</h1>
+            <div class="header-subtitle">LOOP WCS LOGISTICS TRACKING</div>
+        </header>
+
+        <div class="main-content">
+            <div class="left-section">
+                <!-- KPI Cards -->
+                <div class="kpi-cards">
+                    <div class="kpi-card" style="--accent-color: #00b4ff; --rgb-color: 0, 180, 255;">
+                        <div class="kpi-card-header">
+                            <div class="kpi-icon">
+                                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                            </div>
+                            <span class="kpi-title">今日任务总数</span>
+                        </div>
+                        <div>
+                            <span class="kpi-value" id="totalTasks">1,286</span>
+                            <span class="kpi-unit">个</span>
+                        </div>
+                        <div class="kpi-trend up">↑ 12.5% 较昨日</div>
+                    </div>
+
+                    <div class="kpi-card" style="--accent-color: #00ff88; --rgb-color: 0, 255, 136;">
+                        <div class="kpi-card-header">
+                            <div class="kpi-icon">
+                                <svg viewBox="0 0 24 24"><path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/></svg>
+                            </div>
+                            <span class="kpi-title">环线吞吐量</span>
+                        </div>
+                        <div>
+                            <span class="kpi-value" id="throughput">856</span>
+                            <span class="kpi-unit">件/小时</span>
+                        </div>
+                        <div class="kpi-trend up">↑ 8.3% 较上小时</div>
+                    </div>
+
+                    <div class="kpi-card" style="--accent-color: #ffaa00; --rgb-color: 255, 170, 0;">
+                        <div class="kpi-card-header">
+                            <div class="kpi-icon">
+                                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                            </div>
+                            <span class="kpi-title">设备在线率</span>
+                        </div>
+                        <div>
+                            <span class="kpi-value" id="onlineRate">96.8</span>
+                            <span class="kpi-unit">%</span>
+                        </div>
+                        <div class="kpi-trend up">↑ 2.1% 较昨日</div>
+                    </div>
+
+                    <div class="kpi-card" style="--accent-color: #ff6b9d; --rgb-color: 255, 107, 157;">
+                        <div class="kpi-card-header">
+                            <div class="kpi-icon">
+                                <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                            </div>
+                            <span class="kpi-title">平均响应时间</span>
+                        </div>
+                        <div>
+                            <span class="kpi-value" id="responseTime">45</span>
+                            <span class="kpi-unit">ms</span>
+                        </div>
+                        <div class="kpi-trend down">↓ 5.2% 较昨日</div>
+                    </div>
+                </div>
+
+                <!-- RGV Track Map -->
+                <div class="rgv-map-container">
+                    <div class="rgv-map-header">
+                        <div class="rgv-map-icon">
+                            <svg viewBox="0 0 24 24"><path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/></svg>
+                        </div>
+                        <div class="rgv-map-title">环线RGV实时位置</div>
+                        <div class="rgv-legend">
+                            <div class="legend-item">
+                                <div class="legend-dot running"></div>
+                                <span>运行中</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-dot standby"></div>
+                                <span>待机</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-dot fault"></div>
+                                <span>故障</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="rgvMap"></div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Alerts -->
+            <div class="right-panel">
+                <div class="panel-header">
+                    <div class="panel-icon">
+                        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
+                    </div>
+                    <div class="panel-title">实时报警列表</div>
+                    <div class="alert-count" id="alertCount">3</div>
+                </div>
+                <div class="panel-content" id="alertList">
+                    <!-- Alerts will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Device Detail Modal -->
+    <div class="modal-overlay" id="deviceModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">设备详情</div>
+                <div class="modal-close" onclick="closeModal()">
+                    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="device-info-grid">
+                    <div class="info-item">
+                        <div class="info-label">设备名称</div>
+                        <div class="info-value" id="modalDeviceName">RGV-01</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">设备类型</div>
+                        <div class="info-value" id="modalDeviceType">穿梭车</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">当前状态</div>
+                        <div class="info-value status-running" id="modalDeviceStatus">运行中</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">当前位置</div>
+                        <div class="info-value" id="modalDevicePosition">站点 A-05</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">累计里程</div>
+                        <div class="info-value" id="modalDeviceMileage">12,456 km</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">最后通讯</div>
+                        <div class="info-value" id="modalDeviceLastComm">2024-03-23 14:32:15</div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn primary" onclick="restartDevice()">重启设备</button>
+                    <button class="modal-btn danger" onclick="pauseDevice()">暂停运行</button>
+                    <button class="modal-btn secondary" onclick="closeModal()">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock Data
+        const rgvData = [
+            { id: 'RGV-01', name: '穿梭车-01', status: 'running', position: 15, mileage: 12456, lastComm: '2024-03-23 14:32:15' },
+            { id: 'RGV-02', name: '穿梭车-02', status: 'running', position: 45, mileage: 9876, lastComm: '2024-03-23 14:31:42' },
+            { id: 'RGV-03', name: '穿梭车-03', status: 'standby', position: 75, mileage: 15234, lastComm: '2024-03-23 14:30:18' },
+            { id: 'RGV-04', name: '穿梭车-04', status: 'running', position: 105, mileage: 8765, lastComm: '2024-03-23 14:32:01' },
+            { id: 'RGV-05', name: '穿梭车-05', status: 'fault', position: 135, mileage: 23456, lastComm: '2024-03-23 14:25:33' },
+            { id: 'RGV-06', name: '穿梭车-06', status: 'running', position: 165, mileage: 11234, lastComm: '2024-03-23 14:31:55' },
+            { id: 'RGV-07', name: '穿梭车-07', status: 'running', position: 195, mileage: 7654, lastComm: '2024-03-23 14:32:08' },
+            { id: 'RGV-08', name: '穿梭车-08', status: 'standby', position: 225, mileage: 18987, lastComm: '2024-03-23 14:28:22' },
+        ];
+
+        const alertsData = [
+            { id: 1, level: 'fault', device: 'RGV-05', message: '电机过热保护触发，请检查散热系统', time: '14:25:33' },
+            { id: 2, level: 'warning', device: 'Lifter-02', message: '提升机运行时间超过8小时，建议维护', time: '14:18:45' },
+            { id: 3, level: 'warning', device: 'RGV-03', message: '穿梭车待机时间过长，请检查任务分配', time: '14:15:12' },
+            { id: 4, level: 'info', device: 'System', message: '系统定时备份完成', time: '14:00:00' },
+            { id: 5, level: 'fault', device: 'Conveyor-12', message: '传送带卡滞，传感器异常', time: '13:52:28' },
+        ];
+
+        let selectedDevice = null;
+
+        // Initialize ECharts
+        function initRgvMap() {
+            const chart = echarts.init(document.getElementById('rgvMap'));
+            
+            // 长方形环形轨道参数
+            const trackWidth = 600;
+            const trackHeight = 250;
+            const leftX = 100;
+            const rightX = leftX + trackWidth;
+            const topY = 25;
+            const bottomY = topY + trackHeight;
+            const cornerRadius = 15;
+            
+            // 生成铁轨风格的长方形轨道 - 四边直接连接形成闭合环路
+            function generateRailTrack() {
+                const points = [];
+                const segmentsPerSide = 50; // 每边50个点
+                
+                // 上边（从左到右）：从左上角到右上角
+                for (let i = 0; i <= segmentsPerSide; i++) {
+                    const ratio = i / segmentsPerSide;
+                    points.push([leftX + trackWidth * ratio, topY]);
+                }
+                
+                // 右边（从上到下）：从右上角到右下角
+                for (let i = 1; i <= segmentsPerSide; i++) {
+                    const ratio = i / segmentsPerSide;
+                    points.push([rightX, topY + trackHeight * ratio]);
+                }
+                
+                // 下边（从右到左）：从右下角到左下角
+                for (let i = 1; i <= segmentsPerSide; i++) {
+                    const ratio = i / segmentsPerSide;
+                    points.push([rightX - trackWidth * ratio, bottomY]);
+                }
+                
+                // 左边（从下到上）：从左下角回到左上角（闭合环路）
+                for (let i = 1; i <= segmentsPerSide; i++) {
+                    const ratio = i / segmentsPerSide;
+                    points.push([leftX, bottomY - trackHeight * ratio]);
+                }
+                
+                return points;
+            }
+            
+            const trackPoints = generateRailTrack();
+            
+            // 生成铁轨枕木 - 四边均匀分布
+            function generateSleepers() {
+                const sleepers = [];
+                const sleepersPerSide = 10;
+                
+                // 上边枕木
+                for (let i = 0; i < sleepersPerSide; i++) {
+                    const ratio = (i + 0.5) / sleepersPerSide;
+                    sleepers.push({ value: [leftX + trackWidth * ratio, topY], angle: 90 });
+                }
+                
+                // 右边枕木
+                for (let i = 0; i < sleepersPerSide; i++) {
+                    const ratio = (i + 0.5) / sleepersPerSide;
+                    sleepers.push({ value: [rightX, topY + trackHeight * ratio], angle: 0 });
+                }
+                
+                // 下边枕木
+                for (let i = 0; i < sleepersPerSide; i++) {
+                    const ratio = (i + 0.5) / sleepersPerSide;
+                    sleepers.push({ value: [rightX - trackWidth * ratio, bottomY], angle: 90 });
+                }
+                
+                // 左边枕木
+                for (let i = 0; i < sleepersPerSide; i++) {
+                    const ratio = (i + 0.5) / sleepersPerSide;
+                    sleepers.push({ value: [leftX, bottomY - trackHeight * ratio], angle: 0 });
+                }
+                
+                return sleepers;
+            }
+            
+            const sleepers = generateSleepers();
+
+            // 站点位置（分布在长方形轨道上）- 删除所有站点
+            const stations = [];
+            
+            // 车间框参数 - 与轨道左边框相切，向中间靠拢
+            const workshopWidth = 80;
+            const workshopGap = 30; // 两个车间之间的间距
+            
+            // 计算轨道中间位置
+            const trackCenterY = (topY + bottomY) / 2;
+            
+            // 注塑车间（轨道左边中间偏上，与轨道相切）
+            // 高度中心与穿梭车-06高度保持一致
+            const zhusuWidth = workshopWidth;
+            const zhusuHeight = 60;
+            const zhusuX = leftX - zhusuWidth; // 右边缘与轨道左边框相切
+            const zhusuY = trackCenterY - zhusuHeight / 2 - 20 + 60 - 120; // 中间偏上，与穿梭车-06高度对齐，向上移动120像素
+            
+            // 钣喷车间（轨道左边中间偏下，与轨道相切）
+            const bapenWidth = workshopWidth;
+            const bapenHeight = 100;
+            const bapenX = leftX - bapenWidth; // 右边缘与轨道左边框相切
+            const bapenY = zhusuY + zhusuHeight + workshopGap + 60 - 20; // 在注塑车间下方，间距30，再向下移动60像素，再向上移动20像素
+            
+            // 生成车间虚线框
+            function generateWorkshopBorder(x, y, w, h) {
+                const points = [];
+                points.push([x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]);
+                return points;
+            }
+            
+            const bapenBorder = generateWorkshopBorder(bapenX, bapenY, bapenWidth, bapenHeight);
+            const zhusuBorder = generateWorkshopBorder(zhusuX, zhusuY, zhusuWidth, zhusuHeight);
+            
+            // 生成车间内横向铁轨
+            function generateInternalRails(x, y, w, h, count) {
+                const rails = [];
+                const spacing = h / (count + 1);
+                for (let i = 1; i <= count; i++) {
+                    const railY = y + spacing * i;
+                    rails.push([[x, railY], [x + w, railY]]);
+                }
+                return rails;
+            }
+            
+            const bapenRails = generateInternalRails(bapenX, bapenY, bapenWidth, bapenHeight, 4);
+            const zhusuRails = generateInternalRails(zhusuX, zhusuY, zhusuWidth, zhusuHeight, 2);
+            
+            // 轨道右边新车间参数
+            const rightWorkshopWidth = 80;
+            const rightWorkshopGap = 30;
+            
+            // 物资库1（轨道右边中间偏上）
+            const wuzikuWidth = rightWorkshopWidth;
+            const wuzikuHeight = 100;
+            const wuzikuX = rightX; // 左边缘与轨道右边框相切
+            const wuzikuY = zhusuY; // 顶部与注塑车间顶部对齐
+            
+            // 控制器车间（轨道右边中间偏下）
+            const controllerWidth = rightWorkshopWidth;
+            const controllerHeight = 100;
+            const controllerX = rightX; // 左边缘与轨道右边框相切
+            const controllerY = wuzikuY + wuzikuHeight + rightWorkshopGap; // 在物资库1下方，间距30
+            
+            // 生成右边车间边框和铁轨
+            const wuzikuBorder = generateWorkshopBorder(wuzikuX, wuzikuY, wuzikuWidth, wuzikuHeight);
+            const controllerBorder = generateWorkshopBorder(controllerX, controllerY, controllerWidth, controllerHeight);
+            const wuzikuRails = generateInternalRails(wuzikuX, wuzikuY, wuzikuWidth, wuzikuHeight, 5);
+            const controllerRails = generateInternalRails(controllerX, controllerY, controllerWidth, controllerHeight, 5);
+            
+            // 生成轨道上边纵向铁轨 - 随机分布，整体偏右
+            function generateVerticalRails() {
+                const outerRails = [];
+                const innerRails = [];
+                const railLength = 60; // 铁轨长度
+                const rightOffset = trackWidth * 0.35; // 整体向右偏移35%
+                
+                // 外边6条纵向铁轨（向上延伸）- 随机分布，偏右
+                const outerPositions = [0.45, 0.52, 0.58, 0.65, 0.72, 0.85]; // 相对位置（偏右）
+                for (let i = 0; i < 6; i++) {
+                    const x = leftX + trackWidth * outerPositions[i];
+                    outerRails.push([[x, topY], [x, topY - railLength]]);
+                }
+                
+                // 里边4条纵向铁轨（向下延伸）- 随机分布，偏右
+                const innerPositions = [0.48, 0.60, 0.70, 0.82]; // 相对位置（偏右）
+                for (let i = 0; i < 4; i++) {
+                    const x = leftX + trackWidth * innerPositions[i];
+                    innerRails.push([[x, topY], [x, topY + railLength]]);
+                }
+                
+                return { outerRails, innerRails };
+            }
+            
+            const { outerRails, innerRails } = generateVerticalRails();
+            
+            // 生成轨道下边外侧6条纵向铁轨 - 整体靠右，等间距分布
+            function generateBottomRails() {
+                const bottomRails = [];
+                const railLength = 60; // 铁轨长度
+                const startX = leftX + trackWidth * 0.55; // 从55%位置开始（靠右）
+                const endX = leftX + trackWidth * 0.92; // 到92%位置结束
+                const spacing = (endX - startX) / 5; // 6条铁轨，5个等间距
+                
+                for (let i = 0; i < 6; i++) {
+                    const x = startX + spacing * i;
+                    bottomRails.push([[x, bottomY], [x, bottomY + railLength]]);
+                }
+                
+                return bottomRails;
+            }
+            
+            const bottomRails = generateBottomRails();
+            
+            // 为纵向铁轨生成黄色枕木
+            function generateRailSleepers(rails, isVertical = true) {
+                const sleepers = [];
+                const sleeperCount = 4; // 每条铁轨4个枕木
+                
+                rails.forEach(rail => {
+                    const startPoint = rail[0];
+                    const endPoint = rail[1];
+                    
+                    if (isVertical) {
+                        // 纵向铁轨 - 枕木水平放置
+                        const x = startPoint[0];
+                        const yStart = Math.min(startPoint[1], endPoint[1]);
+                        const yEnd = Math.max(startPoint[1], endPoint[1]);
+                        const spacing = (yEnd - yStart) / (sleeperCount + 1);
+                        
+                        for (let i = 1; i <= sleeperCount; i++) {
+                            const y = yStart + spacing * i;
+                            sleepers.push({
+                                value: [x, y],
+                                angle: 0 // 水平
+                            });
+                        }
+                    }
+                });
+                
+                return sleepers;
+            }
+            
+            // 生成所有纵向铁轨的枕木
+            const outerSleepers = generateRailSleepers(outerRails, true);
+            const innerSleepers = generateRailSleepers(innerRails, true);
+            const bottomSleepers = generateRailSleepers(bottomRails, true);
+            
+            // 为横向铁轨生成黄色枕木
+            function generateHorizontalRailSleepers(rails) {
+                const sleepers = [];
+                const sleeperCount = 3; // 每条铁轨3个枕木
+                
+                rails.forEach(rail => {
+                    const startPoint = rail[0];
+                    const endPoint = rail[1];
+                    
+                    // 横向铁轨 - 枕木垂直放置
+                    const y = startPoint[1];
+                    const xStart = Math.min(startPoint[0], endPoint[0]);
+                    const xEnd = Math.max(startPoint[0], endPoint[0]);
+                    const spacing = (xEnd - xStart) / (sleeperCount + 1);
+                    
+                    for (let i = 1; i <= sleeperCount; i++) {
+                        const x = xStart + spacing * i;
+                        sleepers.push({
+                            value: [x, y],
+                            angle: 90 // 垂直
+                        });
+                    }
+                });
+                
+                return sleepers;
+            }
+            
+            // 生成所有车间横向铁轨的枕木
+            const bapenSleepers = generateHorizontalRailSleepers(bapenRails);
+            const zhusuSleepers = generateHorizontalRailSleepers(zhusuRails);
+            const wuzikuSleepers = generateHorizontalRailSleepers(wuzikuRails);
+            const controllerSleepers = generateHorizontalRailSleepers(controllerRails);
+            
+            // 为铁轨生成两条细线（外轨），与枕木两端相切
+            function generateRailLines(rails, isVertical = true, offset = 6) {
+                const leftLines = [];
+                const rightLines = [];
+                
+                rails.forEach(rail => {
+                    const startPoint = rail[0];
+                    const endPoint = rail[1];
+                    
+                    if (isVertical) {
+                        // 纵向铁轨 - 细线水平偏移
+                        const x = startPoint[0];
+                        const y1 = startPoint[1];
+                        const y2 = endPoint[1];
+                        leftLines.push([[x - offset, y1], [x - offset, y2]]);
+                        rightLines.push([[x + offset, y1], [x + offset, y2]]);
+                    } else {
+                        // 横向铁轨 - 细线垂直偏移
+                        const y = startPoint[1];
+                        const x1 = startPoint[0];
+                        const x2 = endPoint[0];
+                        leftLines.push([[x1, y - offset], [x2, y - offset]]);
+                        rightLines.push([[x1, y + offset], [x2, y + offset]]);
+                    }
+                });
+                
+                return { leftLines, rightLines };
+            }
+            
+            // 生成所有纵向铁轨的两条细线
+            const outerRailLines = generateRailLines(outerRails, true, 6);
+            const innerRailLines = generateRailLines(innerRails, true, 6);
+            const bottomRailLines = generateRailLines(bottomRails, true, 6);
+            
+            // 生成所有车间横向铁轨的两条细线（偏移量5，与枕木高度10的一半相切）
+            const bapenRailLines = generateRailLines(bapenRails, false, 5);
+            const zhusuRailLines = generateRailLines(zhusuRails, false, 5);
+            const wuzikuRailLines = generateRailLines(wuzikuRails, false, 5);
+            const controllerRailLines = generateRailLines(controllerRails, false, 5);
+
+            const option = {
+                backgroundColor: 'transparent',
+                grid: {
+                    left: 20,
+                    right: 20,
+                    top: 20,
+                    bottom: 20,
+                },
+                xAxis: {
+                    type: 'value',
+                    min: 0,
+                    max: 800,
+                    show: false,
+                },
+                yAxis: {
+                    type: 'value',
+                    min: 0,
+                    max: 300,
+                    show: false,
+                },
+                series: [
+                    // 铁轨外轨（金属质感）
+                    {
+                        type: 'line',
+                        data: trackPoints,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 0, y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: '#5a6c7d' },
+                                    { offset: 0.5, color: '#8a9cad' },
+                                    { offset: 1, color: '#5a6c7d' }
+                                ]
+                            },
+                            width: 18,
+                            shadowBlur: 8,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)',
+                        },
+                        silent: true,
+                        z: 1,
+                    },
+                    // 铁轨内轨（深色凹槽）
+                    {
+                        type: 'line',
+                        data: trackPoints,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#1a2332',
+                            width: 10,
+                            shadowBlur: 4,
+                            shadowColor: 'rgba(0, 0, 0, 0.8)',
+                        },
+                        silent: true,
+                        z: 2,
+                    },
+                    // 铁轨高光效果
+                    {
+                        type: 'line',
+                        data: trackPoints,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: 'rgba(100, 200, 255, 0.15)',
+                            width: 22,
+                            shadowBlur: 25,
+                            shadowColor: 'rgba(100, 200, 255, 0.3)',
+                        },
+                        silent: true,
+                        z: 0,
+                    },
+                    // 枕木（木质纹理效果）
+                    {
+                        type: 'scatter',
+                        symbol: 'rect',
+                        symbolSize: [4, 22],
+                        data: sleepers,
+                        itemStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 1, y2: 0,
+                                colorStops: [
+                                    { offset: 0, color: '#4a4035' },
+                                    { offset: 0.5, color: '#6a5d4d' },
+                                    { offset: 1, color: '#4a4035' }
+                                ]
+                            },
+                            shadowBlur: 3,
+                            shadowColor: 'rgba(0, 0, 0, 0.6)',
+                        },
+                        silent: true,
+                        z: 1,
+                    },
+                    // 轨道上边外边6条纵向铁轨（精致金属效果）
+                    ...outerRails.map((rail, index) => ({
+                        type: 'line',
+                        data: rail,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 1, y2: 0,
+                                colorStops: [
+                                    { offset: 0, color: '#6b7280' },
+                                    { offset: 0.5, color: '#a1a8b0' },
+                                    { offset: 1, color: '#6b7280' }
+                                ]
+                            },
+                            width: 5,
+                            shadowBlur: 5,
+                            shadowColor: 'rgba(0, 0, 0, 0.4)',
+                        },
+                        silent: true,
+                        z: 2,
+                    })),
+                    // 轨道上边里边4条纵向铁轨（精致金属效果）
+                    ...innerRails.map((rail, index) => ({
+                        type: 'line',
+                        data: rail,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 1, y2: 0,
+                                colorStops: [
+                                    { offset: 0, color: '#6b7280' },
+                                    { offset: 0.5, color: '#a1a8b0' },
+                                    { offset: 1, color: '#6b7280' }
+                                ]
+                            },
+                            width: 5,
+                            shadowBlur: 5,
+                            shadowColor: 'rgba(0, 0, 0, 0.4)',
+                        },
+                        silent: true,
+                        z: 2,
+                    })),
+                    // 轨道下边外侧6条纵向铁轨（精致金属效果）
+                    ...bottomRails.map((rail, index) => ({
+                        type: 'line',
+                        data: rail,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 1, y2: 0,
+                                colorStops: [
+                                    { offset: 0, color: '#6b7280' },
+                                    { offset: 0.5, color: '#a1a8b0' },
+                                    { offset: 1, color: '#6b7280' }
+                                ]
+                            },
+                            width: 5,
+                            shadowBlur: 5,
+                            shadowColor: 'rgba(0, 0, 0, 0.4)',
+                        },
+                        silent: true,
+                        z: 2,
+                    })),
+                    // 纵向铁轨黄色枕木（外边6条）
+                    {
+                        type: 'scatter',
+                        symbol: 'rect',
+                        symbolSize: [12, 3],
+                        data: outerSleepers,
+                        itemStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 1, y2: 0,
+                                colorStops: [
+                                    { offset: 0, color: '#d4a017' },
+                                    { offset: 0.5, color: '#f4d03f' },
+                                    { offset: 1, color: '#d4a017' }
+                                ]
+                            },
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 3,
+                    },
+                    // 纵向铁轨黄色枕木（里边4条）
+                    {
+                        type: 'scatter',
+                        symbol: 'rect',
+                        symbolSize: [12, 3],
+                        data: innerSleepers,
+                        itemStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 1, y2: 0,
+                                colorStops: [
+                                    { offset: 0, color: '#d4a017' },
+                                    { offset: 0.5, color: '#f4d03f' },
+                                    { offset: 1, color: '#d4a017' }
+                                ]
+                            },
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 3,
+                    },
+                    // 纵向铁轨黄色枕木（下边6条）
+                    {
+                        type: 'scatter',
+                        symbol: 'rect',
+                        symbolSize: [12, 3],
+                        data: bottomSleepers,
+                        itemStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 1, y2: 0,
+                                colorStops: [
+                                    { offset: 0, color: '#d4a017' },
+                                    { offset: 0.5, color: '#f4d03f' },
+                                    { offset: 1, color: '#d4a017' }
+                                ]
+                            },
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 3,
+                    },
+                    // 轨道上边外侧6条铁轨的两条细线（外轨）
+                    ...outerRailLines.leftLines.map(line => ({
+                        type: 'line',
+                        data: line,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#8B4513',
+                            width: 2,
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 4,
+                    })),
+                    ...outerRailLines.rightLines.map(line => ({
+                        type: 'line',
+                        data: line,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#8B4513',
+                            width: 2,
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 4,
+                    })),
+                    // 轨道上边内侧4条铁轨的两条细线（外轨）
+                    ...innerRailLines.leftLines.map(line => ({
+                        type: 'line',
+                        data: line,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#8B4513',
+                            width: 2,
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 4,
+                    })),
+                    ...innerRailLines.rightLines.map(line => ({
+                        type: 'line',
+                        data: line,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#8B4513',
+                            width: 2,
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 4,
+                    })),
+                    // 轨道下边外侧6条铁轨的两条细线（外轨）
+                    ...bottomRailLines.leftLines.map(line => ({
+                        type: 'line',
+                        data: line,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#8B4513',
+                            width: 2,
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 4,
+                    })),
+                    ...bottomRailLines.rightLines.map(line => ({
+                        type: 'line',
+                        data: line,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#8B4513',
+                            width: 2,
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 4,
+                    })),
+                    // 钣喷车间虚线框
+                    {
+                        type: 'line',
+                        data: bapenBorder,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#00b4ff',
+                            width: 2,
+                            type: 'dashed',
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(0, 180, 255, 0.5)',
+                        },
+                        silent: true,
+                        z: 3,
+                    },
+                    // 钣喷车间标题
+                    {
+                        type: 'scatter',
+                        symbolSize: 0,
+                        data: [[bapenX + bapenWidth / 2, bapenY - 12]],
+                        label: {
+                            show: true,
+                            formatter: '钣喷车间',
+                            position: 'inside',
+                            color: '#00b4ff',
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            backgroundColor: 'rgba(0, 40, 80, 0.8)',
+                            padding: [3, 6],
+                            borderRadius: 4,
+                            borderColor: '#00b4ff',
+                            borderWidth: 1,
+                        },
+                        silent: true,
+                        z: 4,
+                    },
+                    // 钣喷车间内4条横向铁轨（精致金属效果）
+                    ...bapenRails.map((rail, index) => ({
+                        type: 'line',
+                        data: rail,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 0, y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: '#5a6c7d' },
+                                    { offset: 0.5, color: '#8a9cad' },
+                                    { offset: 1, color: '#5a6c7d' }
+                                ]
+                            },
+                            width: 5,
+                            shadowBlur: 4,
+                            shadowColor: 'rgba(0, 0, 0, 0.4)',
+                        },
+                        silent: true,
+                        z: 2,
+                    })),
+                    // 钣喷车间横向铁轨黄色枕木
+                    {
+                        type: 'scatter',
+                        symbol: 'rect',
+                        symbolSize: [3, 10],
+                        data: bapenSleepers,
+                        itemStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 0, y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: '#d4a017' },
+                                    { offset: 0.5, color: '#f4d03f' },
+                                    { offset: 1, color: '#d4a017' }
+                                ]
+                            },
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 3,
+                    },
+                    // 钣喷车间横向铁轨两条细线（外轨）
+                    ...bapenRailLines.leftLines.map(line => ({
+                        type: 'line',
+                        data: line,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#8B4513',
+                            width: 2,
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 4,
+                    })),
+                    ...bapenRailLines.rightLines.map(line => ({
+                        type: 'line',
+                        data: line,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#8B4513',
+                            width: 2,
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 4,
+                    })),
+                    // 注塑车间虚线框
+                    {
+                        type: 'line',
+                        data: zhusuBorder,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#10b981',
+                            width: 2,
+                            type: 'dashed',
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(16, 185, 129, 0.5)',
+                        },
+                        silent: true,
+                        z: 3,
+                    },
+                    // 注塑车间标题
+                    {
+                        type: 'scatter',
+                        symbolSize: 0,
+                        data: [[zhusuX + zhusuWidth / 2, zhusuY - 12]],
+                        label: {
+                            show: true,
+                            formatter: '注塑车间',
+                            position: 'inside',
+                            color: '#10b981',
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            backgroundColor: 'rgba(0, 40, 80, 0.8)',
+                            padding: [3, 6],
+                            borderRadius: 4,
+                            borderColor: '#10b981',
+                            borderWidth: 1,
+                        },
+                        silent: true,
+                        z: 4,
+                    },
+                    // 注塑车间内2条横向铁轨（精致金属效果）
+                    ...zhusuRails.map((rail, index) => ({
+                        type: 'line',
+                        data: rail,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 0, y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: '#5a6c7d' },
+                                    { offset: 0.5, color: '#8a9cad' },
+                                    { offset: 1, color: '#5a6c7d' }
+                                ]
+                            },
+                            width: 5,
+                            shadowBlur: 4,
+                            shadowColor: 'rgba(0, 0, 0, 0.4)',
+                        },
+                        silent: true,
+                        z: 2,
+                    })),
+                    // 注塑车间横向铁轨黄色枕木
+                    {
+                        type: 'scatter',
+                        symbol: 'rect',
+                        symbolSize: [3, 10],
+                        data: zhusuSleepers,
+                        itemStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 0, y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: '#d4a017' },
+                                    { offset: 0.5, color: '#f4d03f' },
+                                    { offset: 1, color: '#d4a017' }
+                                ]
+                            },
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 3,
+                    },
+                    // 注塑车间横向铁轨两条细线（外轨）
+                    ...zhusuRailLines.leftLines.map(line => ({
+                        type: 'line',
+                        data: line,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#8B4513',
+                            width: 2,
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 4,
+                    })),
+                    ...zhusuRailLines.rightLines.map(line => ({
+                        type: 'line',
+                        data: line,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#8B4513',
+                            width: 2,
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 4,
+                    })),
+                    // 物资库1虚线框
+                    {
+                        type: 'line',
+                        data: wuzikuBorder,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#f59e0b',
+                            width: 2,
+                            type: 'dashed',
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(245, 158, 11, 0.5)',
+                        },
+                        silent: true,
+                        z: 3,
+                    },
+                    // 物资库1标题
+                    {
+                        type: 'scatter',
+                        symbolSize: 0,
+                        data: [[wuzikuX + wuzikuWidth / 2, wuzikuY - 12]],
+                        label: {
+                            show: true,
+                            formatter: '物资库1',
+                            position: 'inside',
+                            color: '#f59e0b',
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            backgroundColor: 'rgba(0, 40, 80, 0.8)',
+                            padding: [3, 6],
+                            borderRadius: 4,
+                            borderColor: '#f59e0b',
+                            borderWidth: 1,
+                        },
+                        silent: true,
+                        z: 4,
+                    },
+                    // 物资库1内5条横向铁轨（精致金属效果）
+                    ...wuzikuRails.map((rail, index) => ({
+                        type: 'line',
+                        data: rail,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 0, y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: '#5a6c7d' },
+                                    { offset: 0.5, color: '#8a9cad' },
+                                    { offset: 1, color: '#5a6c7d' }
+                                ]
+                            },
+                            width: 5,
+                            shadowBlur: 4,
+                            shadowColor: 'rgba(0, 0, 0, 0.4)',
+                        },
+                        silent: true,
+                        z: 2,
+                    })),
+                    // 物资库1横向铁轨黄色枕木
+                    {
+                        type: 'scatter',
+                        symbol: 'rect',
+                        symbolSize: [3, 10],
+                        data: wuzikuSleepers,
+                        itemStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 0, y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: '#d4a017' },
+                                    { offset: 0.5, color: '#f4d03f' },
+                                    { offset: 1, color: '#d4a017' }
+                                ]
+                            },
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 3,
+                    },
+                    // 物资库1横向铁轨两条细线（外轨）
+                    ...wuzikuRailLines.leftLines.map(line => ({
+                        type: 'line',
+                        data: line,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#8B4513',
+                            width: 2,
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 4,
+                    })),
+                    ...wuzikuRailLines.rightLines.map(line => ({
+                        type: 'line',
+                        data: line,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#8B4513',
+                            width: 2,
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 4,
+                    })),
+                    // 控制器车间虚线框
+                    {
+                        type: 'line',
+                        data: controllerBorder,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#8b5cf6',
+                            width: 2,
+                            type: 'dashed',
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(139, 92, 246, 0.5)',
+                        },
+                        silent: true,
+                        z: 3,
+                    },
+                    // 控制器车间标题
+                    {
+                        type: 'scatter',
+                        symbolSize: 0,
+                        data: [[controllerX + controllerWidth / 2, controllerY - 12]],
+                        label: {
+                            show: true,
+                            formatter: '控制器车间',
+                            position: 'inside',
+                            color: '#8b5cf6',
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            backgroundColor: 'rgba(0, 40, 80, 0.8)',
+                            padding: [3, 6],
+                            borderRadius: 4,
+                            borderColor: '#8b5cf6',
+                            borderWidth: 1,
+                        },
+                        silent: true,
+                        z: 4,
+                    },
+                    // 控制器车间内5条横向铁轨（精致金属效果）
+                    ...controllerRails.map((rail, index) => ({
+                        type: 'line',
+                        data: rail,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 0, y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: '#5a6c7d' },
+                                    { offset: 0.5, color: '#8a9cad' },
+                                    { offset: 1, color: '#5a6c7d' }
+                                ]
+                            },
+                            width: 5,
+                            shadowBlur: 4,
+                            shadowColor: 'rgba(0, 0, 0, 0.4)',
+                        },
+                        silent: true,
+                        z: 2,
+                    })),
+                    // 控制器车间横向铁轨黄色枕木
+                    {
+                        type: 'scatter',
+                        symbol: 'rect',
+                        symbolSize: [3, 10],
+                        data: controllerSleepers,
+                        itemStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 0, y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: '#d4a017' },
+                                    { offset: 0.5, color: '#f4d03f' },
+                                    { offset: 1, color: '#d4a017' }
+                                ]
+                            },
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 3,
+                    },
+                    // 控制器车间横向铁轨两条细线（外轨）
+                    ...controllerRailLines.leftLines.map(line => ({
+                        type: 'line',
+                        data: line,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#8B4513',
+                            width: 2,
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 4,
+                    })),
+                    ...controllerRailLines.rightLines.map(line => ({
+                        type: 'line',
+                        data: line,
+                        smooth: false,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#8B4513',
+                            width: 2,
+                            shadowBlur: 2,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        },
+                        silent: true,
+                        z: 4,
+                    })),
+                    // Stations
+                    {
+                        type: 'scatter',
+                        symbolSize: 50,
+                        data: stations,
+                        itemStyle: {
+                            color: 'rgba(0, 180, 255, 0.2)',
+                            borderColor: '#00b4ff',
+                            borderWidth: 2,
+                            shadowBlur: 15,
+                            shadowColor: 'rgba(0, 180, 255, 0.5)',
+                        },
+                        label: {
+                            show: true,
+                            formatter: '{b}',
+                            position: 'bottom',
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            fontSize: 12,
+                            distance: 10,
+                        },
+                        emphasis: {
+                            scale: 1.3,
+                            itemStyle: {
+                                shadowBlur: 25,
+                                shadowColor: '#00b4ff',
+                            }
+                        },
+                        z: 5,
+                    },
+                    // 8台穿梭车
+                    {
+                        type: 'scatter',
+                        symbol: 'rect',
+                        symbolSize: [20, 12],
+                        data: [],
+                        itemStyle: {
+                            color: '#3498db',
+                            borderColor: '#2980b9',
+                            borderWidth: 2,
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(52, 152, 219, 0.8)',
+                        },
+                        label: {
+                            show: true,
+                            formatter: function(params) {
+                                return params.data.name;
+                            },
+                            position: 'top',
+                            color: '#fff',
+                            fontSize: 11,
+                            fontWeight: 'bold',
+                            distance: 8,
+                            backgroundColor: 'rgba(41, 128, 185, 0.9)',
+                            padding: [3, 6],
+                            borderRadius: 3,
+                        },
+                        z: 10,
+                    },
+                ],
+            };
+
+            chart.setOption(option);
+
+            // 8台穿梭车动画
+            const vehicles = [
+                { id: 1, name: '01', angle: 0, speed: 0.5 },
+                { id: 2, name: '02', angle: 45, speed: 0.5 },
+                { id: 3, name: '03', angle: 90, speed: 0.5 },
+                { id: 4, name: '04', angle: 135, speed: 0.5 },
+                { id: 5, name: '05', angle: 180, speed: 0.5 },
+                { id: 6, name: '06', angle: 225, speed: 0.5 },
+                { id: 7, name: '07', angle: 270, speed: 0.5 },
+                { id: 8, name: '08', angle: 315, speed: 0.5 },
+            ];
+
+            // 找到小车 series 的索引（最后一个 scatter）
+            const vehicleSeriesIndex = option.series.length - 1;
+
+            function animateVehicles() {
+                vehicles.forEach(vehicle => {
+                    vehicle.angle = (vehicle.angle + vehicle.speed) % 360;
+                    const result = getRgvPositionWithRotation(vehicle.angle);
+                    vehicle.value = result.position;
+                });
+
+                // 更新穿梭车数据，保持其他 series 不变
+                const newData = vehicles.map(v => ({
+                    value: v.value,
+                    name: v.name,
+                    data: v
+                }));
+
+                chart.setOption({
+                    series: {
+                        [vehicleSeriesIndex]: {
+                            data: newData
+                        }
+                    }
+                });
+
+                requestAnimationFrame(animateVehicles);
+            }
+
+            // 启动小车动画
+            animateVehicles();
+
+            // Responsive
+            window.addEventListener('resize', () => {
+                chart.resize();
+            });
+        }
+
+        function getRgvPosition(angle) {
+            // 长方形环形轨道参数
+            const trackWidth = 600;
+            const trackHeight = 250;
+            const leftX = 100;
+            const rightX = leftX + trackWidth;
+            const topY = 25;
+            const bottomY = topY + trackHeight;
+            const perimeter = 2 * (trackWidth + trackHeight);
+            
+            // 将角度转换为轨道上的位置
+            const t = (angle / 360) * perimeter;
+            let x, y;
+            
+            // 上边（从左到右）
+            if (t < trackWidth) {
+                const ratio = t / trackWidth;
+                x = leftX + trackWidth * ratio;
+                y = topY;
+            }
+            // 右边（从上到下）
+            else if (t < trackWidth + trackHeight) {
+                const ratio = (t - trackWidth) / trackHeight;
+                x = rightX;
+                y = topY + trackHeight * ratio;
+            }
+            // 下边（从右到左）- 直接连接到左边
+            else if (t < 2 * trackWidth + trackHeight) {
+                const ratio = (t - trackWidth - trackHeight) / trackWidth;
+                x = rightX - trackWidth * ratio;
+                y = bottomY;
+            }
+            // 左边（从下到上）- 从左下角开始向上
+            else {
+                const ratio = (t - 2 * trackWidth - trackHeight) / trackHeight;
+                x = leftX;
+                y = bottomY - trackHeight * ratio;
+            }
+            
+            return [x, y];
+        }
+
+        // 获取小车位置和旋转角度（沿轨道方向）
+        function getRgvPositionWithRotation(angle) {
+            // 长方形环形轨道参数
+            const trackWidth = 600;
+            const trackHeight = 250;
+            const leftX = 100;
+            const rightX = leftX + trackWidth;
+            const topY = 25;
+            const bottomY = topY + trackHeight;
+            const perimeter = 2 * (trackWidth + trackHeight);
+            
+            // 将角度转换为轨道上的位置
+            const t = (angle / 360) * perimeter;
+            let x, y, rotation;
+            
+            // 上边（从左到右）- 小车向右，三角形指向右为0度
+            if (t < trackWidth) {
+                const ratio = t / trackWidth;
+                x = leftX + trackWidth * ratio;
+                y = topY;
+                rotation = 90; // 三角形默认指向上，向右需要旋转90度
+            }
+            // 右边（从上到下）- 小车向下
+            else if (t < trackWidth + trackHeight) {
+                const ratio = (t - trackWidth) / trackHeight;
+                x = rightX;
+                y = topY + trackHeight * ratio;
+                rotation = 180; // 向下旋转180度
+            }
+            // 下边（从右到左）- 小车向左
+            else if (t < 2 * trackWidth + trackHeight) {
+                const ratio = (t - trackWidth - trackHeight) / trackWidth;
+                x = rightX - trackWidth * ratio;
+                y = bottomY;
+                rotation = 270; // 向左旋转270度
+            }
+            // 左边（从下到上）- 小车向上
+            else {
+                const ratio = (t - 2 * trackWidth - trackHeight) / trackHeight;
+                x = leftX;
+                y = bottomY - trackHeight * ratio;
+                rotation = 0; // 向上为0度
+            }
+            
+            return { position: [x, y], rotation: rotation };
+        }
+
+        // Render Alerts
+        function renderAlerts() {
+            const container = document.getElementById('alertList');
+            document.getElementById('alertCount').textContent = alertsData.length;
+            
+            container.innerHTML = alertsData.map(alert => `
+                <div class="alert-item ${alert.level}" onclick="showAlertDetail(${alert.id})">
+                    <div class="alert-header">
+                        <span class="alert-level ${alert.level}">${getAlertLevelText(alert.level)}</span>
+                        <span class="alert-time">${alert.time}</span>
+                    </div>
+                    <div class="alert-device">${alert.device}</div>
+                    <div class="alert-message">${alert.message}</div>
+                </div>
+            `).join('');
+        }
+
+        function getAlertLevelText(level) {
+            const map = { fault: '故障', warning: '警告', info: '信息' };
+            return map[level] || level;
+        }
+
+        // Modal Functions
+        function showDeviceModal(device) {
+            selectedDevice = device;
+            document.getElementById('modalTitle').textContent = device.name;
+            document.getElementById('modalDeviceName').textContent = device.name;
+            document.getElementById('modalDeviceType').textContent = '穿梭车';
+            document.getElementById('modalDeviceStatus').textContent = getStatusText(device.status);
+            document.getElementById('modalDeviceStatus').className = `info-value status-${device.status}`;
+            document.getElementById('modalDevicePosition').textContent = `位置 ${device.position}°`;
+            document.getElementById('modalDeviceMileage').textContent = device.mileage.toLocaleString() + ' km';
+            document.getElementById('modalDeviceLastComm').textContent = device.lastComm;
+            document.getElementById('deviceModal').classList.add('active');
+        }
+
+        function showAlertDetail(alertId) {
+            const alert = alertsData.find(a => a.id === alertId);
+            if (alert) {
+                const device = rgvData.find(r => r.id === alert.device) || { name: alert.device, status: 'unknown', position: 0, mileage: 0, lastComm: '-' };
+                showDeviceModal(device);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('deviceModal').classList.remove('active');
+        }
+
+        function getStatusText(status) {
+            const map = { running: '运行中', standby: '待机', fault: '故障', unknown: '未知' };
+            return map[status] || status;
+        }
+
+        function restartDevice() {
+            if (selectedDevice) {
+                alert(`正在重启 ${selectedDevice.name}...`);
+                selectedDevice.status = 'running';
+                closeModal();
+            }
+        }
+
+        function pauseDevice() {
+            if (selectedDevice) {
+                alert(`已暂停 ${selectedDevice.name}`);
+                selectedDevice.status = 'standby';
+                closeModal();
+            }
+        }
+
+        // Update KPI data
+        function updateKPI() {
+            document.getElementById('totalTasks').textContent = (1200 + Math.floor(Math.random() * 200)).toLocaleString();
+            document.getElementById('throughput').textContent = (800 + Math.floor(Math.random() * 100)).toLocaleString();
+            document.getElementById('onlineRate').textContent = (95 + Math.random() * 3).toFixed(1);
+            document.getElementById('responseTime').textContent = (40 + Math.floor(Math.random() * 20)).toString();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initRgvMap();
+            renderAlerts();
+            
+            // Update KPI every 5 seconds
+            setInterval(updateKPI, 5000);
+            
+            // Add new alert every 10 seconds
+            setInterval(() => {
+                const newAlert = {
+                    id: Date.now(),
+                    level: Math.random() > 0.7 ? 'fault' : (Math.random() > 0.5 ? 'warning' : 'info'),
+                    device: `RGV-0${Math.floor(Math.random() * 8) + 1}`,
+                    message: '设备状态变化提醒',
+                    time: new Date().toTimeString().slice(0, 8),
+                };
+                alertsData.unshift(newAlert);
+                if (alertsData.length > 10) alertsData.pop();
+                renderAlerts();
+            }, 10000);
+        });
+
+        // Close modal on overlay click
+        document.getElementById('deviceModal').addEventListener('click', (e) => {
+            if (e.target.id === 'deviceModal') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

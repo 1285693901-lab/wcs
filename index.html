@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环线WCS物流跟踪系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #061018 0%, #0d2840 50%, #081525 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(90deg, rgba(0, 50, 100, 0.9) 0%, rgba(0, 70, 140, 0.85) 50%, rgba(0, 50, 100, 0.9) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            border-radius: 12px;
+            padding: 20px 40px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            height: 100px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(0, 180, 255, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        .tech-circuit {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.15;
+            pointer-events: none;
+            background-image:
+                linear-gradient(90deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%),
+                linear-gradient(0deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%);
+            background-size: 100px 100px;
+        }
+
+        .tech-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                linear-gradient(90deg, transparent 49%, rgba(0, 180, 255, 0.03) 50%, transparent 51%),
+                linear-gradient(0deg, transparent 49%, rgba(0, 180, 255, 0.03) 50%, transparent 51%);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00b4ff, transparent);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00b4ff, transparent);
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 600;
+            letter-spacing: 4px;
+            background: linear-gradient(180deg, #fff 0%, #00b4ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 180, 255, 0.5);
+        }
+
+        .header-subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 8px;
+            letter-spacing: 2px;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            flex: 1;
+        }
+
+        .nav-card {
+            background: linear-gradient(135deg, rgba(0, 50, 100, 0.6) 0%, rgba(0, 30, 60, 0.7) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 16px;
+            padding: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+
+        .nav-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-card:hover::before {
+            opacity: 1;
+        }
+
+        .nav-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-color);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), 0 0 30px var(--glow-color);
+        }
+
+        .nav-card-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 0%, var(--glow-color) 0%, transparent 70%);
+            opacity: 0.1;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-card:hover .nav-card-bg {
+            opacity: 0.2;
+        }
+
+        .nav-card-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--accent-color) 0%, rgba(0, 0, 0, 0.3) 100%);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 8px 32px var(--glow-color);
+        }
+
+        .nav-card-icon svg {
+            width: 50px;
+            height: 50px;
+            fill: #fff;
+        }
+
+        .nav-card-content {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .nav-card-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 12px;
+            letter-spacing: 2px;
+        }
+
+        .nav-card-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+            max-width: 280px;
+        }
+
+        .nav-card-features {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .feature-tag {
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* 卡片颜色主题 */
+        .nav-card.dashboard {
+            --accent-color: #00b4ff;
+            --rgb-color: 0, 180, 255;
+            --glow-color: rgba(0, 180, 255, 0.3);
+        }
+
+        .nav-card.tasks {
+            --accent-color: #00d4aa;
+            --rgb-color: 0, 212, 170;
+            --glow-color: rgba(0, 212, 170, 0.3);
+        }
+
+        .nav-card.devices {
+            --accent-color: #ffd700;
+            --rgb-color: 255, 215, 0;
+            --glow-color: rgba(255, 215, 0, 0.3);
+        }
+
+        /* 底部状态栏 */
+        .status-bar {
+            background: linear-gradient(90deg, rgba(0, 40, 80, 0.8) 0%, rgba(0, 50, 100, 0.8) 50%, rgba(0, 40, 80, 0.8) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 10px;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .status-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .status-value.success {
+            color: #00d4aa;
+        }
+
+        .status-value.warning {
+            color: #ffd700;
+        }
+
+        .status-value.error {
+            color: #ff4757;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00d4aa;
+            box-shadow: 0 0 10px #00d4aa;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-time {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            font-family: 'Courier New', monospace;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .nav-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-card {
+                padding: 30px;
+            }
+            
+            .nav-card-icon {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .nav-card-icon svg {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .nav-card-title {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="header-bg"></div>
+            <div class="tech-circuit"></div>
+            <div class="tech-lines"></div>
+            <div class="header-content">
+                <h1>环线WCS物流跟踪系统</h1>
+                <div class="header-subtitle">Loop WCS Logistics Tracking System</div>
+            </div>
+        </header>
+
+        <!-- 主内容 -->
+        <main class="main-content">
+            <div class="nav-grid">
+                <!-- 环线总览 -->
+                <a href="wcs-dashboard.html" class="nav-card dashboard">
+                    <div class="nav-card-bg"></div>
+                    <div class="nav-card-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+                        </svg>
+                    </div>
+                    <div class="nav-card-content">
+                        <div class="nav-card-title">环线总览</div>
+                        <div class="nav-card-desc">实时监控环线运行状态，展示KPI指标、RGV位置分布和实时报警信息</div>
+                        <div class="nav-card-features">
+                            <span class="feature-tag">KPI看板</span>
+                            <span class="feature-tag">RGV地图</span>
+                            <span class="feature-tag">实时报警</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- 任务监控 -->
+                <a href="wcs-tasks.html" class="nav-card tasks">
+                    <div class="nav-card-bg"></div>
+                    <div class="nav-card-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                        </svg>
+                    </div>
+                    <div class="nav-card-content">
+                        <div class="nav-card-title">任务监控</div>
+                        <div class="nav-card-desc">查看任务执行详情，支持按类型和状态筛选，实时追踪任务进度</div>
+                        <div class="nav-card-features">
+                            <span class="feature-tag">任务列表</span>
+                            <span class="feature-tag">状态筛选</span>
+                            <span class="feature-tag">统计分析</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- 设备管理 -->
+                <a href="wcs-devices.html" class="nav-card devices">
+                    <div class="nav-card-bg"></div>
+                    <div class="nav-card-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/>
+                        </svg>
+                    </div>
+                    <div class="nav-card-content">
+                        <div class="nav-card-title">设备管理</div>
+                        <div class="nav-card-desc">管理环线所有设备，查看设备状态、累计里程和通讯情况</div>
+                        <div class="nav-card-features">
+                            <span class="feature-tag">设备列表</span>
+                            <span class="feature-tag">状态监控</span>
+                            <span class="feature-tag">远程控制</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </main>
+
+        <!-- 底部状态栏 -->
+        <footer class="status-bar">
+            <div class="status-item">
+                <div class="status-dot"></div>
+                <span class="status-label">系统状态:</span>
+                <span class="status-value success">运行正常</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">在线设备:</span>
+                <span class="status-value">16/17</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">待处理报警:</span>
+                <span class="status-value warning">5</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">当前时间:</span>
+                <span class="status-time" id="currentTime">--:--:--</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // 更新时间
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('zh-CN', { hour12: false });
+            document.getElementById('currentTime').textContent = timeString;
+        }
+        
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // 添加卡片点击效果
+        document.querySelectorAll('.nav-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                // 添加点击动画
+                this.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        });
+    </script>
+</body>
+</html>

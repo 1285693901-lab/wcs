@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环线WCS物流跟踪 - 任务监控</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #061018 0%, #0d2840 50%, #081525 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styles */
+        .header {
+            background: linear-gradient(90deg, rgba(0, 50, 100, 0.9) 0%, rgba(0, 70, 140, 0.85) 50%, rgba(0, 50, 100, 0.9) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            border-radius: 12px;
+            padding: 20px 40px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+            height: 110px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(0, 180, 255, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        .tech-circuit {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.15;
+            pointer-events: none;
+            background-image:
+                linear-gradient(90deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%),
+                linear-gradient(0deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%);
+            background-size: 100px 100px;
+        }
+
+        .tech-dots {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, rgba(0, 180, 255, 0.4) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.3;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00b4ff, transparent);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.5), transparent);
+        }
+
+        .corner {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-color: #00b4ff;
+            border-style: solid;
+        }
+
+        .corner-tl { top: 5px; left: 5px; border-width: 2px 0 0 2px; }
+        .corner-tr { top: 5px; right: 5px; border-width: 2px 2px 0 0; }
+        .corner-bl { bottom: 5px; left: 5px; border-width: 0 0 2px 2px; }
+        .corner-br { bottom: 5px; right: 5px; border-width: 0 2px 2px 0; }
+
+        .tech-corner-decor {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(0, 180, 255, 0.4);
+        }
+
+        .corner-decor-tl { top: 8px; left: 8px; border-right: none; border-bottom: none; }
+        .corner-decor-tr { top: 8px; right: 8px; border-left: none; border-bottom: none; }
+        .corner-decor-bl { bottom: 8px; left: 8px; border-right: none; border-top: none; }
+        .corner-decor-br { bottom: 8px; right: 8px; border-left: none; border-top: none; }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 600;
+            text-align: center;
+            color: #ffffff;
+            letter-spacing: 8px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 0 40px rgba(0, 180, 255, 0.8), 0 0 80px rgba(0, 180, 255, 0.4);
+        }
+
+        .header-subtitle {
+            text-align: center;
+            color: rgba(0, 180, 255, 0.6);
+            font-size: 14px;
+            margin-top: 8px;
+            letter-spacing: 4px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .header-subtitle::before,
+        .header-subtitle::after {
+            content: '';
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.5));
+        }
+
+        .header-subtitle::after {
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.5), transparent);
+        }
+
+        /* Navigation Buttons */
+        .nav-buttons {
+            position: absolute;
+            top: calc(68% + 8px);
+            left: 50%;
+            transform: translate(calc(-50% - 416px), -50%);
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            background: rgba(0, 60, 100, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 100, 150, 0.6);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.3);
+        }
+
+        .nav-btn.active {
+            background: rgba(0, 180, 255, 0.25);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #00b4ff;
+            font-weight: 600;
+            box-shadow: 0 0 20px rgba(0, 180, 255, 0.4);
+        }
+
+        /* Main Content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .left-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-height: 0;
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            padding: 15px 20px;
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            background: rgba(0, 60, 100, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            outline: none;
+            min-width: 120px;
+        }
+
+        .filter-select:focus {
+            border-color: rgba(0, 180, 255, 0.6);
+            box-shadow: 0 0 10px rgba(0, 180, 255, 0.2);
+        }
+
+        .filter-select option {
+            background: #0d2840;
+            color: #fff;
+        }
+
+        .filter-btn {
+            padding: 8px 20px;
+            background: linear-gradient(135deg, #00b4ff, #0088ff);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: auto;
+        }
+
+        .filter-btn:hover {
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.5);
+        }
+
+        /* Task Table Container */
+        .task-table-container {
+            flex: 1;
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .task-table-header {
+            padding: 16px 20px;
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.15) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .task-table-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 180, 255, 0.15);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .task-table-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: #00b4ff;
+        }
+
+        .task-table-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 2px;
+        }
+
+        .task-count {
+            margin-left: auto;
+            background: rgba(0, 180, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            color: #00b4ff;
+        }
+
+        .task-table-content {
+            flex: 1;
+            overflow: hidden;
+            padding: 0;
+            position: relative;
+        }
+
+        .task-table-scroll {
+            animation: scrollUp 20s linear infinite;
+        }
+
+        .task-table-scroll:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes scrollUp {
+            0% {
+                transform: translateY(0);
+            }
+            100% {
+                transform: translateY(-50%);
+            }
+        }
+
+        /* Table Styles */
+        .task-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .task-table thead {
+            background: rgba(0, 50, 100, 0.95);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .task-table th {
+            padding: 14px 12px;
+            text-align: left;
+            color: rgba(0, 180, 255, 0.9);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.3);
+            white-space: nowrap;
+        }
+
+        .task-table th:first-child,
+        .task-table td:first-child {
+            padding-left: 20px;
+        }
+
+        .task-table td {
+            padding: 14px 12px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.1);
+            color: rgba(255, 255, 255, 0.95);
+            white-space: nowrap;
+        }
+
+        .task-table tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        .task-table tbody tr:hover {
+            background: rgba(0, 180, 255, 0.08);
+        }
+
+        .task-table tbody tr.new-task {
+            animation: newTaskHighlight 2s ease;
+        }
+
+        @keyframes newTaskHighlight {
+            0% { background: rgba(0, 255, 136, 0.3); }
+            100% { background: transparent; }
+        }
+
+        /* Status Tags */
+        .status-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-tag.waiting {
+            background: rgba(255, 170, 0, 0.2);
+            color: #ffaa00;
+            border: 1px solid rgba(255, 170, 0, 0.3);
+        }
+
+        .status-tag.running {
+            background: rgba(0, 180, 255, 0.2);
+            color: #00b4ff;
+            border: 1px solid rgba(0, 180, 255, 0.3);
+        }
+
+        .status-tag.completed {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-tag.waiting .status-dot { background: #ffaa00; }
+        .status-tag.running .status-dot { background: #00b4ff; }
+        .status-tag.completed .status-dot { background: #00ff88; animation: none; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        /* Task Type */
+        .task-type {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .task-type.inbound {
+            background: rgba(0, 255, 136, 0.15);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .task-type.outbound {
+            background: rgba(255, 107, 157, 0.15);
+            color: #ff6b9d;
+            border: 1px solid rgba(255, 107, 157, 0.3);
+        }
+
+        .task-type.transfer {
+            background: rgba(138, 107, 255, 0.15);
+            color: #8a6bff;
+            border: 1px solid rgba(138, 107, 255, 0.3);
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 15px 20px;
+            border-top: 1px solid rgba(0, 180, 255, 0.2);
+        }
+
+        .page-btn {
+            padding: 6px 12px;
+            background: rgba(0, 60, 100, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover {
+            background: rgba(0, 100, 150, 0.6);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #fff;
+        }
+
+        .page-btn.active {
+            background: rgba(0, 180, 255, 0.25);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #00b4ff;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Right Panel - Stats */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-height: 0;
+        }
+
+        .stats-card {
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stats-card:last-child {
+            flex: 1;
+            min-height: 0;
+        }
+
+        .stats-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.15);
+        }
+
+        .stats-card-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 180, 255, 0.15);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stats-card-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: #00b4ff;
+        }
+
+        .stats-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .stats-chart {
+            height: 200px;
+        }
+
+        .stats-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .stats-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: rgba(0, 30, 60, 0.5);
+            border-radius: 8px;
+        }
+
+        .stats-item-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .stats-item-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #00b4ff;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 40, 80, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 180, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 180, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-bg"></div>
+            <div class="tech-circuit"></div>
+            <div class="tech-dots"></div>
+            <div class="tech-corner-decor corner-decor-tl"></div>
+            <div class="tech-corner-decor corner-decor-tr"></div>
+            <div class="tech-corner-decor corner-decor-bl"></div>
+            <div class="tech-corner-decor corner-decor-br"></div>
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+
+            <div class="nav-buttons">
+                <a href="wcs-dashboard.html" class="nav-btn">环线总览</a>
+                <a href="wcs-tasks.html" class="nav-btn active">任务监控</a>
+                <a href="wcs-devices.html" class="nav-btn">设备管理</a>
+            </div>
+            <h1>环线WCS物流跟踪系统</h1>
+            <div class="header-subtitle">TASK MONITOR</div>
+        </header>
+
+        <div class="main-content">
+            <div class="left-section">
+                <!-- Filter Bar -->
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <span class="filter-label">任务类型:</span>
+                        <select class="filter-select" id="typeFilter">
+                            <option value="">全部</option>
+                            <option value="inbound">入库</option>
+                            <option value="outbound">出库</option>
+                            <option value="transfer">移库</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <span class="filter-label">任务状态:</span>
+                        <select class="filter-select" id="statusFilter">
+                            <option value="">全部</option>
+                            <option value="waiting">等待</option>
+                            <option value="running">执行中</option>
+                            <option value="completed">完成</option>
+                        </select>
+                    </div>
+                    <button class="filter-btn" onclick="applyFilters()">应用筛选</button>
+                </div>
+
+                <!-- Task Table -->
+                <div class="task-table-container">
+                    <div class="task-table-header">
+                        <div class="task-table-icon">
+                            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                        </div>
+                        <div class="task-table-title">任务列表</div>
+                        <div class="task-count" id="taskCount">共 0 条</div>
+                    </div>
+                    <div class="task-table-content">
+                        <table class="task-table">
+                            <thead>
+                                <tr>
+                                    <th>任务ID</th>
+                                    <th>类型</th>
+                                    <th>起始点</th>
+                                    <th>目标点</th>
+                                    <th>状态</th>
+                                    <th>优先级</th>
+                                    <th>创建时间</th>
+                                    <th>执行设备</th>
+                                </tr>
+                            </thead>
+                        </table>
+                        <div class="task-table-scroll" id="taskTableScroll">
+                            <table class="task-table">
+                                <tbody id="taskTableBody">
+                                    <!-- Tasks will be rendered here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="pagination" id="pagination">
+                        <!-- Pagination will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Stats -->
+            <div class="right-panel">
+                <div class="stats-card">
+                    <div class="stats-card-header">
+                        <div class="stats-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M11 2v20c-5.07-.5-9-4.79-9-10s3.93-9.5 9-10zm2.03 0v8.99H22c-.47-4.74-4.24-8.52-8.97-8.99zm0 11.01V22c4.74-.47 8.5-4.25 8.97-8.99h-8.97z"/></svg>
+                        </div>
+                        <div class="stats-card-title">任务类型分布</div>
+                    </div>
+                    <div class="stats-chart" id="typeChart"></div>
+                </div>
+
+                <div class="stats-card">
+                    <div class="stats-card-header">
+                        <div class="stats-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                        </div>
+                        <div class="stats-card-title">任务状态统计</div>
+                    </div>
+                    <div class="stats-list" id="statusStats">
+                        <!-- Stats will be rendered here -->
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <div class="stats-card-header">
+                        <div class="stats-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+                        </div>
+                        <div class="stats-card-title">今日任务趋势</div>
+                    </div>
+                    <div class="stats-chart" id="trendChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock Data
+        const tasksData = [
+            { id: 'TSK-202403001', type: 'inbound', from: '入库区-A01', to: '缓存区-C05', status: 'completed', priority: 'normal', createTime: '2024-03-23 08:30:15', device: 'RGV-01' },
+            { id: 'TSK-202403002', type: 'outbound', from: '缓存区-C12', to: '出库区-B03', status: 'running', priority: 'high', createTime: '2024-03-23 08:32:42', device: 'RGV-02' },
+            { id: 'TSK-202403003', type: 'transfer', from: '检验区-D02', to: '包装区-E08', status: 'waiting', priority: 'normal', createTime: '2024-03-23 08:35:18', device: '-' },
+            { id: 'TSK-202403004', type: 'inbound', from: '入库区-A03', to: '缓存区-C08', status: 'running', priority: 'normal', createTime: '2024-03-23 08:38:05', device: 'RGV-03' },
+            { id: 'TSK-202403005', type: 'outbound', from: '缓存区-C15', to: '出库区-B01', status: 'waiting', priority: 'urgent', createTime: '2024-03-23 08:41:22', device: '-' },
+            { id: 'TSK-202403006', type: 'transfer', from: '分拣区-F04', to: '检验区-D06', status: 'completed', priority: 'normal', createTime: '2024-03-23 08:44:38', device: 'RGV-04' },
+            { id: 'TSK-202403007', type: 'inbound', from: '入库区-A02', to: '缓存区-C03', status: 'completed', priority: 'normal', createTime: '2024-03-23 08:47:55', device: 'RGV-05' },
+            { id: 'TSK-202403008', type: 'outbound', from: '缓存区-C09', to: '出库区-B05', status: 'running', priority: 'high', createTime: '2024-03-23 08:51:12', device: 'RGV-06' },
+            { id: 'TSK-202403009', type: 'transfer', from: '包装区-E03', to: '出库区-B02', status: 'waiting', priority: 'normal', createTime: '2024-03-23 08:54:29', device: '-' },
+            { id: 'TSK-202403010', type: 'inbound', from: '入库区-A05', to: '缓存区-C11', status: 'completed', priority: 'normal', createTime: '2024-03-23 08:57:46', device: 'RGV-07' },
+            { id: 'TSK-202403011', type: 'outbound', from: '缓存区-C07', to: '出库区-B04', status: 'running', priority: 'normal', createTime: '2024-03-23 09:01:03', device: 'RGV-08' },
+            { id: 'TSK-202403012', type: 'transfer', from: '检验区-D05', to: '包装区-E06', status: 'completed', priority: 'low', createTime: '2024-03-23 09:04:20', device: 'RGV-01' },
+            { id: 'TSK-202403013', type: 'inbound', from: '入库区-A04', to: '缓存区-C14', status: 'waiting', priority: 'normal', createTime: '2024-03-23 09:07:37', device: '-' },
+            { id: 'TSK-202403014', type: 'outbound', from: '缓存区-C02', to: '出库区-B06', status: 'completed', priority: 'high', createTime: '2024-03-23 09:10:54', device: 'RGV-02' },
+            { id: 'TSK-202403015', type: 'transfer', from: '分拣区-F02', to: '检验区-D03', status: 'running', priority: 'normal', createTime: '2024-03-23 09:14:11', device: 'RGV-03' },
+        ];
+
+        let filteredTasks = [...tasksData];
+        let currentPage = 1;
+        const pageSize = 10;
+
+        // Render Task Table
+        function renderTaskTable() {
+            const tbody = document.getElementById('taskTableBody');
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageTasks = filteredTasks.slice(start, end);
+
+            // 生成任务行HTML
+            const taskRows = pageTasks.map(task => `
+                <tr>
+                    <td>${task.id}</td>
+                    <td>
+                        <span class="task-type ${task.type}">
+                            ${getTypeIcon(task.type)} ${getTypeText(task.type)}
+                        </span>
+                    </td>
+                    <td>${task.from}</td>
+                    <td>${task.to}</td>
+                    <td>
+                        <span class="status-tag ${task.status}">
+                            <span class="status-dot"></span> ${getStatusText(task.status)}
+                        </span>
+                    </td>
+                    <td>${getPriorityText(task.priority)}</td>
+                    <td>${task.createTime}</td>
+                    <td>${task.device}</td>
+                </tr>
+            `).join('');
+
+            // 复制一份数据实现无缝滚动
+            tbody.innerHTML = taskRows + taskRows;
+
+            document.getElementById('taskCount').textContent = `共 ${filteredTasks.length} 条`;
+            renderPagination();
+        }
+
+        function getTypeIcon(type) {
+            const icons = {
+                inbound: '↓',
+                outbound: '↑',
+                transfer: '↔'
+            };
+            return icons[type] || '•';
+        }
+
+        function getTypeText(type) {
+            const map = { inbound: '入库', outbound: '出库', transfer: '移库' };
+            return map[type] || type;
+        }
+
+        function getStatusText(status) {
+            const map = { waiting: '等待', running: '执行中', completed: '完成' };
+            return map[status] || status;
+        }
+
+        function getPriorityText(priority) {
+            const map = { urgent: '紧急', high: '高', normal: '普通', low: '低' };
+            return map[priority] || priority;
+        }
+
+        // Render Pagination
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredTasks.length / pageSize);
+            const pagination = document.getElementById('pagination');
+            
+            let html = `
+                <button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>
+            `;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="color: rgba(255,255,255,0.5);">...</span>`;
+                }
+            }
+
+            html += `
+                <button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>
+            `;
+
+            pagination.innerHTML = html;
+        }
+
+        function goToPage(page) {
+            const totalPages = Math.ceil(filteredTasks.length / pageSize);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderTaskTable();
+        }
+
+        // Apply Filters
+        function applyFilters() {
+            const typeFilter = document.getElementById('typeFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            filteredTasks = tasksData.filter(task => {
+                const typeMatch = !typeFilter || task.type === typeFilter;
+                const statusMatch = !statusFilter || task.status === statusFilter;
+                return typeMatch && statusMatch;
+            });
+
+            currentPage = 1;
+            renderTaskTable();
+            updateStats();
+        }
+
+        // Update Stats
+        function updateStats() {
+            // Status stats
+            const statusCount = { waiting: 0, running: 0, completed: 0 };
+            filteredTasks.forEach(task => {
+                statusCount[task.status]++;
+            });
+
+            document.getElementById('statusStats').innerHTML = `
+                <div class="stats-item">
+                    <span class="stats-item-label">等待中</span>
+                    <span class="stats-item-value" style="color: #ffaa00;">${statusCount.waiting}</span>
+                </div>
+                <div class="stats-item">
+                    <span class="stats-item-label">执行中</span>
+                    <span class="stats-item-value" style="color: #00b4ff;">${statusCount.running}</span>
+                </div>
+                <div class="stats-item">
+                    <span class="stats-item-label">已完成</span>
+                    <span class="stats-item-value" style="color: #00ff88;">${statusCount.completed}</span>
+                </div>
+            `;
+        }
+
+        // Initialize Charts
+        function initCharts() {
+            // Type Distribution Chart
+            const typeChart = echarts.init(document.getElementById('typeChart'));
+            const typeCount = { inbound: 0, outbound: 0, transfer: 0 };
+            tasksData.forEach(task => {
+                typeCount[task.type]++;
+            });
+
+            typeChart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: 'rgba(0, 40, 80, 0.9)',
+                    borderColor: 'rgba(0, 180, 255, 0.3)',
+                    textStyle: { color: '#fff' }
+                },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    center: ['50%', '50%'],
+                    data: [
+                        { value: typeCount.inbound, name: '入库', itemStyle: { color: '#00ff88' } },
+                        { value: typeCount.outbound, name: '出库', itemStyle: { color: '#ff6b9d' } },
+                        { value: typeCount.transfer, name: '移库', itemStyle: { color: '#8a6bff' } },
+                    ],
+                    label: {
+                        color: '#fff',
+                        formatter: '{b}\n{c} ({d}%)'
+                    },
+                    labelLine: {
+                        lineStyle: { color: 'rgba(255, 255, 255, 0.3)' }
+                    }
+                }]
+            });
+
+            // Trend Chart
+            const trendChart = echarts.init(document.getElementById('trendChart'));
+            const hours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00'];
+            const trendData = [45, 68, 92, 85, 78, 95, 88];
+
+            trendChart.setOption({
+                backgroundColor: 'transparent',
+                grid: {
+                    left: 10,
+                    right: 10,
+                    top: 10,
+                    bottom: 20,
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: hours,
+                    axisLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.2)' } },
+                    axisLabel: { color: 'rgba(255, 255, 255, 0.6)', fontSize: 10 }
+                },
+                yAxis: {
+                    type: 'value',
+                    splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)' } },
+                    axisLabel: { color: 'rgba(255, 255, 255, 0.6)', fontSize: 10 }
+                },
+                series: [{
+                    type: 'line',
+                    data: trendData,
+                    smooth: true,
+                    symbol: 'circle',
+                    symbolSize: 6,
+                    lineStyle: { color: '#00b4ff', width: 2 },
+                    itemStyle: { color: '#00b4ff' },
+                    areaStyle: {
+                        color: {
+                            type: 'linear',
+                            x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [
+                                { offset: 0, color: 'rgba(0, 180, 255, 0.3)' },
+                                { offset: 1, color: 'rgba(0, 180, 255, 0)' }
+                            ]
+                        }
+                    }
+                }]
+            });
+
+            window.addEventListener('resize', () => {
+                typeChart.resize();
+                trendChart.resize();
+            });
+        }
+
+        // Simulate new tasks
+        function simulateNewTask() {
+            const types = ['inbound', 'outbound', 'transfer'];
+            const statuses = ['waiting', 'running'];
+            const priorities = ['urgent', 'high', 'normal', 'low'];
+            const fromStations = ['入库区-A01', '入库区-A02', '入库区-A03', '缓存区-C01', '缓存区-C02', '检验区-D01', '包装区-E01'];
+            const toStations = ['缓存区-C05', '缓存区-C08', '出库区-B01', '出库区-B03', '检验区-D02', '包装区-E02', '分拣区-F01'];
+            
+            const newId = String(tasksData.length + 1).padStart(3, '0');
+            const now = new Date();
+            const timeStr = now.toISOString().slice(0, 19).replace('T', ' ');
+            
+            const newTask = {
+                id: `TSK-202403${newId}`,
+                type: types[Math.floor(Math.random() * types.length)],
+                from: fromStations[Math.floor(Math.random() * fromStations.length)],
+                to: toStations[Math.floor(Math.random() * toStations.length)],
+                status: statuses[Math.floor(Math.random() * statuses.length)],
+                priority: priorities[Math.floor(Math.random() * priorities.length)],
+                createTime: timeStr,
+                device: Math.random() > 0.5 ? `RGV-0${Math.floor(Math.random() * 8) + 1}` : '-'
+            };
+            
+            tasksData.unshift(newTask);
+            if (tasksData.length > 50) tasksData.pop();
+            
+            applyFilters();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTaskTable();
+            updateStats();
+            initCharts();
+            
+            // Add new task every 8 seconds
+            setInterval(simulateNewTask, 8000);
+        });
+    </script>
+</body>
+</html>
