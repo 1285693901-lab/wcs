@@ -368,83 +368,87 @@
         .legend-dot.standby { background: #ffaa00; box-shadow: 0 0 8px #ffaa00; }
         .legend-dot.fault { background: #ff4444; box-shadow: 0 0 8px #ff4444; }
 
-        /* RGV Modal */
-        .rgv-modal {
+        /* RGV 跟随卡片 */
+        .rgv-card {
             display: none;
-            position: fixed;
+            position: absolute;
             z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-        }
-
-        .rgv-modal.show {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .rgv-modal-content {
             background: linear-gradient(135deg, rgba(0, 40, 80, 0.95) 0%, rgba(0, 60, 100, 0.95) 100%);
             border: 1px solid rgba(0, 180, 255, 0.5);
             border-radius: 12px;
-            width: 420px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 180, 255, 0.2);
-            animation: modalSlideIn 0.3s ease;
+            width: 320px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 180, 255, 0.3);
+            animation: cardFadeIn 0.2s ease;
+            pointer-events: none;
         }
 
-        @keyframes modalSlideIn {
+        .rgv-card.show {
+            display: block;
+        }
+
+        @keyframes cardFadeIn {
             from {
                 opacity: 0;
-                transform: translateY(-30px);
+                transform: scale(0.9);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: scale(1);
             }
         }
 
-        .rgv-modal-header {
+        .rgv-card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 20px;
+            padding: 12px 16px;
             border-bottom: 1px solid rgba(0, 180, 255, 0.3);
             background: linear-gradient(90deg, rgba(0, 180, 255, 0.15) 0%, transparent 100%);
+            border-radius: 12px 12px 0 0;
         }
 
-        .rgv-modal-header h3 {
+        .rgv-card-header h3 {
             margin: 0;
             color: #fff;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             letter-spacing: 1px;
         }
 
-        .rgv-modal-close {
+        .rgv-card-close {
             color: rgba(255, 255, 255, 0.7);
-            font-size: 24px;
+            font-size: 18px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
-            width: 30px;
-            height: 30px;
+            width: 24px;
+            height: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
+            pointer-events: auto;
         }
 
-        .rgv-modal-close:hover {
+        .rgv-card-close:hover {
             color: #fff;
             background: rgba(255, 107, 107, 0.3);
         }
 
-        .rgv-modal-body {
-            padding: 20px;
+        .rgv-card-body {
+            padding: 12px 16px;
+        }
+
+        .rgv-card-arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid rgba(0, 180, 255, 0.5);
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
         }
 
         .rgv-info-row {
@@ -892,52 +896,51 @@
                         </div>
                     </div>
                     <div id="rgvMap"></div>
-                    <!-- RGV 详情弹窗 -->
-                    <div id="rgvModal" class="rgv-modal">
-                        <div class="rgv-modal-content">
-                            <div class="rgv-modal-header">
-                                <h3 id="rgvModalTitle">RGV 运输详情</h3>
-                                <span class="rgv-modal-close" onclick="closeRgvModal()">&times;</span>
+                    <!-- RGV 详情卡片（跟随小车显示） -->
+                    <div id="rgvCard" class="rgv-card">
+                        <div class="rgv-card-header">
+                            <h3 id="rgvCardTitle">RGV 运输详情</h3>
+                            <span class="rgv-card-close" onclick="closeRgvCard()">&times;</span>
+                        </div>
+                        <div class="rgv-card-body">
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">当前状态：</span>
+                                <span class="rgv-info-value" id="rgvStatus">-</span>
                             </div>
-                            <div class="rgv-modal-body">
-                                <div class="rgv-info-row">
-                                    <span class="rgv-info-label">当前状态：</span>
-                                    <span class="rgv-info-value" id="rgvStatus">-</span>
-                                </div>
-                                <div class="rgv-info-row">
-                                    <span class="rgv-info-label">当前位置/坐标点：</span>
-                                    <span class="rgv-info-value" id="rgvPosition">-</span>
-                                </div>
-                                <div class="rgv-info-row">
-                                    <span class="rgv-info-label">当前运送物资：</span>
-                                    <span class="rgv-info-value" id="rgvMaterial">-</span>
-                                </div>
-                                <div class="rgv-info-row">
-                                    <span class="rgv-info-label">数量：</span>
-                                    <span class="rgv-info-value" id="rgvQuantity">-</span>
-                                </div>
-                                <div class="rgv-info-row">
-                                    <span class="rgv-info-label">发起时间：</span>
-                                    <span class="rgv-info-value" id="rgvStartTime">-</span>
-                                </div>
-                                <div class="rgv-info-row">
-                                    <span class="rgv-info-label">已运送时间：</span>
-                                    <span class="rgv-info-value" id="rgvElapsedTime">-</span>
-                                </div>
-                                <div class="rgv-info-row">
-                                    <span class="rgv-info-label">预计到达时间：</span>
-                                    <span class="rgv-info-value" id="rgvEta">-</span>
-                                </div>
-                                <div class="rgv-info-row">
-                                    <span class="rgv-info-label">目的地-线段岗位：</span>
-                                    <span class="rgv-info-value" id="rgvDestination">-</span>
-                                </div>
-                                <div class="rgv-info-row">
-                                    <span class="rgv-info-label">操作人：</span>
-                                    <span class="rgv-info-value" id="rgvOperator">-</span>
-                                </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">当前位置/坐标点：</span>
+                                <span class="rgv-info-value" id="rgvPosition">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">当前运送物资：</span>
+                                <span class="rgv-info-value" id="rgvMaterial">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">数量：</span>
+                                <span class="rgv-info-value" id="rgvQuantity">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">发起时间：</span>
+                                <span class="rgv-info-value" id="rgvStartTime">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">已运送时间：</span>
+                                <span class="rgv-info-value" id="rgvElapsedTime">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">预计到达时间：</span>
+                                <span class="rgv-info-value" id="rgvEta">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">目的地-线段岗位：</span>
+                                <span class="rgv-info-value" id="rgvDestination">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">操作人：</span>
+                                <span class="rgv-info-value" id="rgvOperator">-</span>
                             </div>
                         </div>
+                        <div class="rgv-card-arrow"></div>
                     </div>
                 </div>
             </div>
@@ -1027,8 +1030,11 @@
         let selectedDevice = null;
 
         // Initialize ECharts
+        let rgvChart = null;
+        let rgvRefreshInterval = null;
+        
         function initRgvMap() {
-            const chart = echarts.init(document.getElementById('rgvMap'));
+            rgvChart = echarts.init(document.getElementById('rgvMap'));
             
             // 长方形环形轨道参数
             const trackWidth = 600;
@@ -2204,6 +2210,7 @@
                     },
                     // RGV小车组（4辆）
                     {
+                        id: 'rgvVehicles',
                         type: 'scatter',
                         symbol: 'path://M4,2 L6,2 L6,4 L10,4 L10,8 L8,8 L8,10 L2,10 L2,8 L0,8 L0,4 L4,4 Z',
                         symbolSize: [28, 20],
@@ -2309,20 +2316,148 @@
                 ],
             };
 
-            chart.setOption(option);
+            rgvChart.setOption(option);
 
             // RGV小车点击事件
             const vehicleSeriesIndex = option.series.length - 1;
-            chart.on('click', function(params) {
+            rgvChart.on('click', function(params) {
                 if (params.seriesIndex === vehicleSeriesIndex) {
-                    openRgvModal(params.data.name);
+                    openRgvCard(params.data.name, params.data.value);
                 }
             });
 
             // Responsive
             window.addEventListener('resize', () => {
-                chart.resize();
+                rgvChart.resize();
             });
+            
+            // 启动RGV位置自动刷新（每1秒）
+            startRgvPositionRefresh();
+        }
+
+        // RGV小车当前角度状态（逆时针移动，角度减少）
+        const rgvAngles = {
+            'RGV-01': 0,
+            'RGV-02': 90,
+            'RGV-03': 180,
+            'RGV-04': 270
+        };
+
+        // 每1秒移动的角度增量（不同小车不同速度）
+        const ANGLE_INCREMENT_RGV01 = 6;     // RGV-01 速度：每次6度
+        const ANGLE_INCREMENT_RGV02 = 2;     // RGV-02 速度：每次2度
+        const ANGLE_INCREMENT_RGV03 = 3;     // RGV-03 速度：每次3度
+        const ANGLE_INCREMENT_RGV04 = 4;     // RGV-04 速度：每次4度
+        
+        // 生成RGV小车数据（沿轨道逆时针匀速移动，不同速度）
+        function generateRgvData() {
+            const rgvNames = ['RGV-01', 'RGV-02', 'RGV-03', 'RGV-04'];
+
+            return rgvNames.map((name, index) => {
+                // 获取当前角度并减少（逆时针移动）
+                let currentAngle = rgvAngles[name];
+
+                // 根据小车名称设置不同速度
+                let increment = 0;
+                if (name === 'RGV-01') {
+                    increment = ANGLE_INCREMENT_RGV01;  // RGV-01: 6度
+                } else if (name === 'RGV-02') {
+                    increment = ANGLE_INCREMENT_RGV02;  // RGV-02: 2度
+                } else if (name === 'RGV-03') {
+                    increment = ANGLE_INCREMENT_RGV03;  // RGV-03: 3度
+                } else if (name === 'RGV-04') {
+                    increment = ANGLE_INCREMENT_RGV04;  // RGV-04: 4度
+                }
+
+                currentAngle = (currentAngle - increment + 360) % 360;
+                rgvAngles[name] = currentAngle;
+                
+                const posData = getRgvPositionWithRotation(currentAngle);
+                
+                // 根据位置判断状态（模拟真实运行状态）
+                let status = 'running';
+                // 每辆小车有不同的运行模式，偶尔进入待机状态
+                if (index === 1 && currentAngle > 180 && currentAngle < 270) {
+                    status = 'standby'; // RGV-02在特定位置待机
+                } else if (index === 3 && currentAngle > 0 && currentAngle < 45) {
+                    status = 'fault'; // RGV-04在特定位置故障
+                }
+                
+                return {
+                    value: posData.position,
+                    name: name,
+                    symbolRotate: posData.rotation,
+                    status: status
+                };
+            });
+        }
+        
+        // 更新RGV小车位置
+        function updateRgvPositions() {
+            if (!rgvChart) {
+                console.log('rgvChart is null');
+                return;
+            }
+            
+            const newRgvData = generateRgvData();
+            
+            // 更新rgvDataMap中的位置信息
+            newRgvData.forEach((rgv) => {
+                const rgvId = rgv.name;
+                if (rgvDataMap[rgvId]) {
+                    const x = Math.round(rgv.value[0]);
+                    const y = Math.round(rgv.value[1]);
+                    let positionText = '';
+                    
+                    // 根据位置判断轨道段落
+                    if (y <= 30) positionText = `轨道上边 (${x}, ${y})`;
+                    else if (x >= 690) positionText = `轨道右边 (${x}, ${y})`;
+                    else if (y >= 270) positionText = `轨道下边 (${x}, ${y})`;
+                    else positionText = `轨道左边 (${x}, ${y})`;
+                    
+                    rgvDataMap[rgvId].position = positionText;
+                    rgvDataMap[rgvId].status = rgv.status;
+                    rgvDataMap[rgvId].statusText = rgv.status === 'running' ? '运行中' : 
+                                                   (rgv.status === 'standby' ? '待机' : '故障');
+                }
+            });
+            
+            // 使用series的id来精确更新RGV小车数据
+            rgvChart.setOption({
+                series: [{
+                    id: 'rgvVehicles',
+                    data: newRgvData
+                }]
+            });
+            
+            // 如果卡片正在显示，更新卡片位置跟随小车
+            if (currentRgvId && currentRgvCardPosition) {
+                const currentRgv = newRgvData.find(rgv => rgv.name === currentRgvId);
+                if (currentRgv) {
+                    currentRgvCardPosition = currentRgv.value;
+                    updateCardPosition(currentRgvCardPosition);
+                }
+            }
+        }
+        
+        // 启动RGV位置自动刷新
+        function startRgvPositionRefresh() {
+            // 先立即更新一次
+            updateRgvPositions();
+
+            // 每1秒刷新一次
+            if (rgvRefreshInterval) {
+                clearInterval(rgvRefreshInterval);
+            }
+            rgvRefreshInterval = setInterval(updateRgvPositions, 1000);
+        }
+        
+        // 停止RGV位置自动刷新
+        function stopRgvPositionRefresh() {
+            if (rgvRefreshInterval) {
+                clearInterval(rgvRefreshInterval);
+                rgvRefreshInterval = null;
+            }
         }
 
         function getRgvPosition(angle) {
@@ -2514,15 +2649,19 @@
             }
         };
 
-        function openRgvModal(rgvId) {
+        // 当前显示的RGV卡片位置
+        let currentRgvCardPosition = null;
+        
+        function openRgvCard(rgvId, position) {
             currentRgvId = rgvId;
+            currentRgvCardPosition = position;
             const data = rgvDataMap[rgvId];
             if (!data) return;
 
-            // 更新弹窗标题
-            document.getElementById('rgvModalTitle').textContent = rgvId + ' 运输详情';
+            // 更新卡片标题
+            document.getElementById('rgvCardTitle').textContent = rgvId + ' 运输详情';
             
-            // 更新弹窗内容
+            // 更新卡片内容
             const statusElement = document.getElementById('rgvStatus');
             statusElement.textContent = data.statusText;
             // 根据状态设置颜色
@@ -2542,7 +2681,12 @@
             document.getElementById('rgvDestination').textContent = data.destination;
             document.getElementById('rgvOperator').textContent = data.operator;
 
-            document.getElementById('rgvModal').classList.add('show');
+            // 显示卡片并设置位置（跟随小车）
+            const card = document.getElementById('rgvCard');
+            card.classList.add('show');
+            
+            // 计算卡片位置（在小车上方）
+            updateCardPosition(position);
             
             // 清除之前的定时器
             if (rgvUpdateInterval) {
@@ -2557,14 +2701,61 @@
                 updateRgvElapsedTime(data.startTime);
             }, 1000);
         }
+        
+        // 更新卡片位置（跟随小车）
+        function updateCardPosition(position) {
+            const card = document.getElementById('rgvCard');
+            if (!card || !card.classList.contains('show')) return;
+            
+            const rgvMap = document.getElementById('rgvMap');
+            const mapRect = rgvMap.getBoundingClientRect();
+            
+            // ECharts坐标系转换：将数据坐标转换为像素坐标
+            const chartWidth = mapRect.width;
+            const chartHeight = mapRect.height;
+            
+            // 根据ECharts的grid配置计算实际绘图区域
+            const gridLeft = 20;
+            const gridRight = 20;
+            const gridTop = 20;
+            const gridBottom = 20;
+            
+            const drawWidth = chartWidth - gridLeft - gridRight;
+            const drawHeight = chartHeight - gridTop - gridBottom;
+            
+            // ECharts坐标范围
+            const xMin = 0, xMax = 800;
+            const yMin = 0, yMax = 300;
+            
+            // 将数据坐标转换为像素坐标
+            const pixelX = gridLeft + (position[0] - xMin) / (xMax - xMin) * drawWidth;
+            const pixelY = gridTop + (position[1] - yMin) / (yMax - yMin) * drawHeight;
+            
+            // 设置卡片位置（在小车上方，水平居中）
+            const cardWidth = 320;
+            const cardHeight = card.offsetHeight || 350;
+            const offsetY = 20; // 小车与卡片之间的间距
+            
+            let left = pixelX - cardWidth / 2;
+            let top = pixelY - cardHeight - offsetY;
+            
+            // 边界检查：确保卡片不超出地图区域
+            if (left < 10) left = 10;
+            if (left + cardWidth > chartWidth - 10) left = chartWidth - cardWidth - 10;
+            if (top < 10) top = pixelY + 30; // 如果上方空间不足，显示在小车下方
+            
+            card.style.left = left + 'px';
+            card.style.top = top + 'px';
+        }
 
-        function closeRgvModal() {
-            document.getElementById('rgvModal').classList.remove('show');
+        function closeRgvCard() {
+            document.getElementById('rgvCard').classList.remove('show');
             if (rgvUpdateInterval) {
                 clearInterval(rgvUpdateInterval);
                 rgvUpdateInterval = null;
             }
             currentRgvId = null;
+            currentRgvCardPosition = null;
         }
 
         // 更新已运送时间
@@ -2581,13 +2772,6 @@
                 elapsedElement.textContent = timeStr;
             }
         }
-
-        // 点击弹窗外部关闭
-        document.getElementById('rgvModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeRgvModal();
-            }
-        });
 
         function getStatusText(status) {
             const map = { running: '运行中', standby: '待机', fault: '故障', unknown: '未知' };
