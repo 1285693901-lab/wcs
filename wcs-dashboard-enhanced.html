@@ -1,0 +1,2086 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环线WCS物流跟踪 - 增强版</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #061018 0%, #0d2840 50%, #081525 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* ========== Header ========== */
+        .header {
+            background: linear-gradient(90deg, rgba(0, 50, 100, 0.9) 0%, rgba(0, 70, 140, 0.85) 50%, rgba(0, 50, 100, 0.9) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            border-radius: 12px;
+            padding: 16px 40px;
+            position: relative;
+            overflow: hidden;
+            height: 90px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(0, 180, 255, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        .tech-circuit {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            opacity: 0.12;
+            pointer-events: none;
+            background-image:
+                linear-gradient(90deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%),
+                linear-gradient(0deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%);
+            background-size: 80px 80px;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00b4ff, transparent);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.5), transparent);
+        }
+
+        .corner {
+            position: absolute;
+            width: 24px; height: 24px;
+            border-color: #00b4ff;
+            border-style: solid;
+        }
+        .corner-tl { top: 5px; left: 5px; border-width: 2px 0 0 2px; }
+        .corner-tr { top: 5px; right: 5px; border-width: 2px 2px 0 0; }
+        .corner-bl { bottom: 5px; left: 5px; border-width: 0 0 2px 2px; }
+        .corner-br { bottom: 5px; right: 5px; border-width: 0 2px 2px 0; }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 8px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 0 40px rgba(0, 180, 255, 0.8), 0 0 80px rgba(0, 180, 255, 0.4);
+        }
+
+        .header-subtitle {
+            text-align: center;
+            color: rgba(0, 180, 255, 0.6);
+            font-size: 13px;
+            margin-top: 6px;
+            letter-spacing: 4px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .nav-buttons {
+            position: absolute;
+            top: calc(60% + 8px);
+            left: 50%;
+            transform: translate(calc(-50% - 416px), -50%);
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            padding: 7px 14px;
+            background: rgba(0, 60, 100, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 100, 150, 0.6);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.3);
+        }
+
+        .nav-btn.active {
+            background: rgba(0, 180, 255, 0.25);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #00b4ff;
+            font-weight: 600;
+            box-shadow: 0 0 20px rgba(0, 180, 255, 0.4);
+        }
+
+        /* ========== Status Bar ========== */
+        .status-bar {
+            display: flex;
+            gap: 16px;
+            flex-shrink: 0;
+        }
+
+        .status-item {
+            flex: 1;
+            background: rgba(0, 40, 80, 0.5);
+            border: 1px solid rgba(0, 180, 255, 0.2);
+            border-radius: 8px;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        .status-dot.green { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+        .status-dot.yellow { background: #ffaa00; box-shadow: 0 0 10px #ffaa00; }
+        .status-dot.red { background: #ff4444; box-shadow: 0 0 10px #ff4444; }
+        .status-dot.blue { background: #00b4ff; box-shadow: 0 0 10px #00b4ff; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-label { font-size: 12px; color: rgba(255, 255, 255, 0.6); }
+        .status-value { font-size: 14px; font-weight: 600; color: #fff; margin-left: auto; }
+
+        /* ========== KPI Cards ========== */
+        .kpi-cards {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .kpi-card {
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 10px;
+            padding: 8px 10px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .kpi-card:hover {
+            border-color: var(--accent-color, #00b4ff);
+            box-shadow: 0 0 20px rgba(var(--rgb-color, 0, 180, 255), 0.2);
+            transform: translateY(-2px);
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 2px; height: 100%;
+            background: var(--accent-color, #00b4ff);
+        }
+
+        .kpi-card-header {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .kpi-icon {
+            width: 22px; height: 22px;
+            background: rgba(var(--rgb-color, 0, 180, 255), 0.15);
+            border: 1px solid rgba(var(--rgb-color, 0, 180, 255), 0.3);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .kpi-title {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .kpi-body {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .kpi-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent-color, #00b4ff);
+            text-shadow: 0 0 15px rgba(var(--rgb-color, 0, 180, 255), 0.4);
+            transition: color 0.5s ease;
+        }
+        .kpi-value.flash-up { color: #00ff88 !important; }
+        .kpi-value.flash-down { color: #ff6b6b !important; }
+
+        .kpi-unit {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .kpi-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .kpi-trend {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .kpi-trend.up { color: #00ff88; }
+        .kpi-trend.down { color: #ff6b6b; }
+
+        .kpi-sparkline {
+            width: 50px;
+            height: 18px;
+        }
+
+        /* ========== Main Content ========== */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .left-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 0;
+        }
+
+        /* ========== RGV Map ========== */
+        .rgv-map-container {
+            flex: 1;
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .rgv-map-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.15);
+        }
+
+        .rgv-map-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 2px;
+        }
+
+        .rgv-legend {
+            margin-left: auto;
+            display: flex;
+            gap: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .legend-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+        }
+        .legend-dot.running { background: #00ff88; box-shadow: 0 0 8px #00ff88; }
+        .legend-dot.standby { background: #ffaa00; box-shadow: 0 0 8px #ffaa00; }
+        .legend-dot.fault { background: #ff4444; box-shadow: 0 0 8px #ff4444; }
+
+        #rgvMap {
+            width: 100%;
+            height: calc(100% - 50px);
+        }
+
+        /* RGV Detail Card */
+        .rgv-card {
+            display: none;
+            position: absolute;
+            z-index: 1000;
+            background: linear-gradient(135deg, rgba(0, 40, 80, 0.95) 0%, rgba(0, 60, 100, 0.95) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.5);
+            border-radius: 12px;
+            width: 320px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 180, 255, 0.3);
+            animation: cardFadeIn 0.2s ease;
+            pointer-events: auto;
+        }
+        .rgv-card.show { display: block; }
+
+        @keyframes cardFadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .rgv-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.3);
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.15) 0%, transparent 100%);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .rgv-card-header h3 {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .rgv-card-close {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 24px; height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .rgv-card-close:hover {
+            color: #fff;
+            background: rgba(255, 107, 107, 0.3);
+        }
+
+        .rgv-card-body { padding: 10px 14px; }
+
+        .rgv-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.1);
+        }
+        .rgv-info-row:last-child { border-bottom: none; }
+        .rgv-info-label { color: rgba(255, 255, 255, 0.7); font-size: 12px; }
+        .rgv-info-value { color: #fff; font-size: 12px; font-weight: 500; text-align: right; }
+
+        /* ========== Right Panel ========== */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 0;
+        }
+
+        .panel-card {
+            flex: 1;
+            background: linear-gradient(145deg, rgba(0, 50, 100, 0.75) 0%, rgba(0, 30, 60, 0.85) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.15) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .panel-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .panel-badge {
+            margin-left: auto;
+            background: rgba(0, 180, 255, 0.2);
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            color: #00b4ff;
+        }
+        .panel-badge.warning { background: rgba(255, 68, 68, 0.2); color: #ff4444; }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        /* ========== Alerts ========== */
+        .alert-item {
+            background: rgba(0, 30, 60, 0.5);
+            border: 1px solid rgba(0, 180, 255, 0.15);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .alert-item:hover {
+            background: rgba(0, 60, 100, 0.5);
+            border-color: rgba(0, 180, 255, 0.4);
+            transform: translateX(3px);
+        }
+        .alert-item.fault { border-left: 3px solid #ff4444; }
+        .alert-item.warning { border-left: 3px solid #ffaa00; }
+        .alert-item.info { border-left: 3px solid #00b4ff; }
+
+        .alert-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+
+        .alert-level {
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .alert-level.fault { background: rgba(255, 68, 68, 0.2); color: #ff4444; }
+        .alert-level.warning { background: rgba(255, 170, 0, 0.2); color: #ffaa00; }
+        .alert-level.info { background: rgba(0, 180, 255, 0.2); color: #00b4ff; }
+
+        .alert-time {
+            margin-left: auto;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .alert-device {
+            font-size: 12px;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+
+        .alert-message {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            line-height: 1.3;
+        }
+
+        /* ========== Task Queue ========== */
+        .task-item {
+            background: rgba(0, 30, 60, 0.5);
+            border: 1px solid rgba(0, 180, 255, 0.15);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            background: rgba(0, 60, 100, 0.5);
+            border-color: rgba(0, 180, 255, 0.4);
+        }
+
+        .task-progress-ring {
+            width: 40px; height: 40px;
+            flex-shrink: 0;
+        }
+
+        .task-info { flex: 1; min-width: 0; }
+        .task-id { font-size: 11px; color: #00b4ff; margin-bottom: 2px; }
+        .task-desc { font-size: 12px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .task-meta { font-size: 10px; color: rgba(255, 255, 255, 0.4); margin-top: 2px; }
+        .task-status {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .task-status.in_progress { background: rgba(0, 255, 136, 0.2); color: #00ff88; }
+        .task-status.pending { background: rgba(255, 170, 0, 0.2); color: #ffaa00; }
+        .task-status.completed { background: rgba(0, 180, 255, 0.2); color: #00b4ff; }
+
+        /* ========== Bottom Charts ========== */
+        .bottom-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            height: 180px;
+            flex-shrink: 0;
+        }
+
+        .chart-card {
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .chart-subtitle {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-left: auto;
+        }
+
+        .chart-body {
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* ========== Modal ========== */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: linear-gradient(145deg, rgba(0, 50, 100, 0.95) 0%, rgba(0, 30, 60, 0.98) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            border-radius: 16px;
+            width: 520px;
+            max-width: 90%;
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            padding: 18px 20px;
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.15) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title { font-size: 16px; font-weight: 600; color: #fff; }
+
+        .modal-close {
+            width: 30px; height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #fff;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        .modal-close:hover { background: rgba(255, 68, 68, 0.3); border-color: rgba(255, 68, 68, 0.5); }
+
+        .modal-body { padding: 20px; }
+
+        .device-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            background: rgba(0, 40, 80, 0.5);
+            border: 1px solid rgba(0, 180, 255, 0.15);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .info-label { font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 4px; }
+        .info-value { font-size: 15px; font-weight: 600; color: #fff; }
+        .info-value.status-running { color: #00ff88; }
+        .info-value.status-standby { color: #ffaa00; }
+        .info-value.status-fault { color: #ff4444; }
+
+        .modal-actions { display: flex; gap: 10px; }
+
+        .modal-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .modal-btn.primary { background: linear-gradient(135deg, #00b4ff, #0088ff); color: #fff; }
+        .modal-btn.primary:hover { box-shadow: 0 0 20px rgba(0, 180, 255, 0.5); }
+        .modal-btn.danger { background: linear-gradient(135deg, #ff4444, #cc0000); color: #fff; }
+        .modal-btn.danger:hover { box-shadow: 0 0 20px rgba(255, 68, 68, 0.5); }
+        .modal-btn.secondary { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .modal-btn.secondary:hover { background: rgba(255, 255, 255, 0.2); }
+
+        /* ========== Alert Filter Tabs ========== */
+        .alert-filters {
+            display: flex;
+            gap: 6px;
+            padding: 6px 8px 0;
+        }
+
+        .alert-filter-btn {
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            border: 1px solid rgba(0, 180, 255, 0.2);
+            background: rgba(0, 40, 80, 0.4);
+            color: rgba(255, 255, 255, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .alert-filter-btn:hover { border-color: rgba(0, 180, 255, 0.5); color: #fff; }
+        .alert-filter-btn.active { background: rgba(0, 180, 255, 0.2); border-color: #00b4ff; color: #00b4ff; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 40, 80, 0.3); }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 180, 255, 0.3); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 180, 255, 0.5); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-bg"></div>
+            <div class="tech-circuit"></div>
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+            <div class="nav-buttons">
+                <a href="wcs-dashboard.html" class="nav-btn">环线总览</a>
+                <a href="wcs-dashboard-enhanced.html" class="nav-btn active">总览增强</a>
+                <a href="wcs-tasks.html" class="nav-btn">任务监控</a>
+                <a href="wcs-tasks-enhanced.html" class="nav-btn">任务增强</a>
+                <a href="wcs-devices.html" class="nav-btn">设备管理</a>
+                <a href="wcs-devices-enhanced.html" class="nav-btn">设备增强</a>
+            </div>
+            <h1>环线WCS物流跟踪系统</h1>
+            <div class="header-subtitle">LOOP WCS LOGISTICS TRACKING - ENHANCED</div>
+        </header>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-dot green"></div>
+                <span class="status-label">系统运行状态</span>
+                <span class="status-value" id="sysStatus">正常</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot blue"></div>
+                <span class="status-label">当前班次</span>
+                <span class="status-value" id="currentShift">白班 (08:00-20:00)</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot green"></div>
+                <span class="status-label">PLC通讯</span>
+                <span class="status-value" id="plcStatus">已连接</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot green"></div>
+                <span class="status-label">MES接口</span>
+                <span class="status-value" id="mesStatus">已同步</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot blue"></div>
+                <span class="status-label">数据更新时间</span>
+                <span class="status-value" id="lastUpdate">--</span>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-cards">
+            <div class="kpi-card" style="--accent-color: #00b4ff; --rgb-color: 0, 180, 255;">
+                <div class="kpi-card-header">
+                    <div class="kpi-icon" style="color:#00b4ff;">📋</div>
+                    <span class="kpi-title">今日任务总数</span>
+                </div>
+                <div class="kpi-body">
+                    <span class="kpi-value" id="totalTasks">1,286</span>
+                    <span class="kpi-unit">个</span>
+                </div>
+                <div class="kpi-footer">
+                    <span class="kpi-trend up">↑ 12.5%</span>
+                    <div class="kpi-sparkline" id="sparkTotal"></div>
+                </div>
+            </div>
+
+            <div class="kpi-card" style="--accent-color: #00ff88; --rgb-color: 0, 255, 136;">
+                <div class="kpi-card-header">
+                    <div class="kpi-icon" style="color:#00ff88;">📦</div>
+                    <span class="kpi-title">环线吞吐量</span>
+                </div>
+                <div class="kpi-body">
+                    <span class="kpi-value" id="throughput">856</span>
+                    <span class="kpi-unit">件/小时</span>
+                </div>
+                <div class="kpi-footer">
+                    <span class="kpi-trend up">↑ 8.3%</span>
+                    <div class="kpi-sparkline" id="sparkThroughput"></div>
+                </div>
+            </div>
+
+            <div class="kpi-card" style="--accent-color: #ffaa00; --rgb-color: 255, 170, 0;">
+                <div class="kpi-card-header">
+                    <div class="kpi-icon" style="color:#ffaa00;">📡</div>
+                    <span class="kpi-title">设备在线率</span>
+                </div>
+                <div class="kpi-body">
+                    <span class="kpi-value" id="onlineRate">96.8</span>
+                    <span class="kpi-unit">%</span>
+                </div>
+                <div class="kpi-footer">
+                    <span class="kpi-trend up">↑ 2.1%</span>
+                    <div class="kpi-sparkline" id="sparkOnline"></div>
+                </div>
+            </div>
+
+            <div class="kpi-card" style="--accent-color: #ff6b9d; --rgb-color: 255, 107, 157;">
+                <div class="kpi-card-header">
+                    <div class="kpi-icon" style="color:#ff6b9d;">⚡</div>
+                    <span class="kpi-title">平均响应时间</span>
+                </div>
+                <div class="kpi-body">
+                    <span class="kpi-value" id="responseTime">45</span>
+                    <span class="kpi-unit">ms</span>
+                </div>
+                <div class="kpi-footer">
+                    <span class="kpi-trend down">↓ 5.2%</span>
+                    <div class="kpi-sparkline" id="sparkResponse"></div>
+                </div>
+            </div>
+
+            <div class="kpi-card" style="--accent-color: #ff4444; --rgb-color: 255, 68, 68;">
+                <div class="kpi-card-header">
+                    <div class="kpi-icon" style="color:#ff4444;">⚠</div>
+                    <span class="kpi-title">故障设备数</span>
+                </div>
+                <div class="kpi-body">
+                    <span class="kpi-value" id="faultCount">2</span>
+                    <span class="kpi-unit">台</span>
+                </div>
+                <div class="kpi-footer">
+                    <span class="kpi-trend down" style="color:#00ff88;">↓ 1台 已恢复</span>
+                    <div class="kpi-sparkline" id="sparkFault"></div>
+                </div>
+            </div>
+
+            <div class="kpi-card" style="--accent-color: #00ff88; --rgb-color: 0, 255, 136;">
+                <div class="kpi-card-header">
+                    <div class="kpi-icon" style="color:#00ff88;">✅</div>
+                    <span class="kpi-title">任务完成率</span>
+                </div>
+                <div class="kpi-body">
+                    <span class="kpi-value" id="completionRate">92.5</span>
+                    <span class="kpi-unit">%</span>
+                </div>
+                <div class="kpi-footer">
+                    <span class="kpi-trend up">↑ 3.2%</span>
+                    <div class="kpi-sparkline" id="sparkCompletion"></div>
+                </div>
+            </div>
+
+            <div class="kpi-card" style="--accent-color: #8b5cf6; --rgb-color: 139, 92, 246;">
+                <div class="kpi-card-header">
+                    <div class="kpi-icon" style="color:#8b5cf6;">📊</div>
+                    <span class="kpi-title">设备利用率</span>
+                </div>
+                <div class="kpi-body">
+                    <span class="kpi-value" id="utilRate">78.3</span>
+                    <span class="kpi-unit">%</span>
+                </div>
+                <div class="kpi-footer">
+                    <span class="kpi-trend up">↑ 5.1%</span>
+                    <div class="kpi-sparkline" id="sparkUtil"></div>
+                </div>
+            </div>
+
+            <div class="kpi-card" style="--accent-color: #f59e0b; --rgb-color: 245, 158, 11;">
+                <div class="kpi-card-header">
+                    <div class="kpi-icon" style="color:#f59e0b;">⏳</div>
+                    <span class="kpi-title">待处理任务</span>
+                </div>
+                <div class="kpi-body">
+                    <span class="kpi-value" id="pendingTasks">28</span>
+                    <span class="kpi-unit">个</span>
+                </div>
+                <div class="kpi-footer">
+                    <span class="kpi-trend up" style="color:#ff6b6b;">↑ 5个 新增</span>
+                    <div class="kpi-sparkline" id="sparkPending"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="left-section">
+                <!-- RGV Track Map -->
+                <div class="rgv-map-container">
+                    <div class="rgv-map-header">
+                        <span class="rgv-map-title">环线RGV实时位置</span>
+                        <div class="rgv-legend">
+                            <div class="legend-item">
+                                <div class="legend-dot running"></div>
+                                <span>运行中</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-dot standby"></div>
+                                <span>待机</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-dot fault"></div>
+                                <span>故障</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="rgvMap"></div>
+                    <div id="rgvCard" class="rgv-card">
+                        <div class="rgv-card-header">
+                            <h3 id="rgvCardTitle">RGV 运输详情</h3>
+                            <span class="rgv-card-close" onclick="closeRgvCard()">&times;</span>
+                        </div>
+                        <div class="rgv-card-body">
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">当前状态：</span>
+                                <span class="rgv-info-value" id="rgvStatus" style="font-size:14px;">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">当前位置/坐标点：</span>
+                                <span class="rgv-info-value" id="rgvPosition">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">当前运送物资：</span>
+                                <span class="rgv-info-value" id="rgvMaterial">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">数量：</span>
+                                <span class="rgv-info-value" id="rgvQuantity">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">关联MES订单：</span>
+                                <span class="rgv-info-value" id="rgvMesOrder">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">发起时间：</span>
+                                <span class="rgv-info-value" id="rgvStartTime">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">已运送时间：</span>
+                                <span class="rgv-info-value" id="rgvElapsedTime">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">预计到达时间：</span>
+                                <span class="rgv-info-value" id="rgvEta">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">目的地：</span>
+                                <span class="rgv-info-value" id="rgvDestination">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">操作人：</span>
+                                <span class="rgv-info-value" id="rgvOperator">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="right-panel">
+                <!-- Alerts Panel -->
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <span class="panel-title">实时报警</span>
+                        <span class="panel-badge warning" id="alertCount">3</span>
+                    </div>
+                    <div class="alert-filters" id="alertFilters">
+                        <button class="alert-filter-btn active" data-filter="all">全部</button>
+                        <button class="alert-filter-btn" data-filter="fault">故障</button>
+                        <button class="alert-filter-btn" data-filter="warning">警告</button>
+                        <button class="alert-filter-btn" data-filter="info">信息</button>
+                    </div>
+                    <div class="panel-content" id="alertList"></div>
+                </div>
+
+                <!-- Task Queue Panel -->
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <span class="panel-title">任务队列</span>
+                        <span class="panel-badge" id="taskCount">5</span>
+                    </div>
+                    <div class="panel-content" id="taskList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Charts -->
+        <div class="bottom-charts">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <span class="chart-title">吞吐量趋势</span>
+                    <span class="chart-subtitle">近24小时 (件/小时)</span>
+                </div>
+                <div class="chart-body" id="chartThroughput"></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-header">
+                    <span class="chart-title">任务完成率</span>
+                    <span class="chart-subtitle">近24小时 (%)</span>
+                </div>
+                <div class="chart-body" id="chartCompletion"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Device Detail Modal -->
+    <div class="modal-overlay" id="deviceModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title" id="modalTitle">设备详情</span>
+                <div class="modal-close" onclick="closeModal()">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div class="device-info-grid">
+                    <div class="info-item">
+                        <div class="info-label">设备名称</div>
+                        <div class="info-value" id="modalDeviceName">RGV-01</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">设备类型</div>
+                        <div class="info-value" id="modalDeviceType">穿梭车</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">当前状态</div>
+                        <div class="info-value status-running" id="modalDeviceStatus">运行中</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">当前位置</div>
+                        <div class="info-value" id="modalDevicePosition">站点 A-05</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">累计里程</div>
+                        <div class="info-value" id="modalDeviceMileage">12,456 km</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">最后通讯</div>
+                        <div class="info-value" id="modalDeviceLastComm">2024-03-23 14:32:15</div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn primary" onclick="restartDevice()">重启设备</button>
+                    <button class="modal-btn danger" onclick="pauseDevice()">暂停运行</button>
+                    <button class="modal-btn secondary" onclick="closeModal()">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== Mock Data ====================
+        const rgvDataStatic = [
+            { id: 'RGV-01', name: '穿梭车-01', status: 'running', position: 15, mileage: 12456, lastComm: '2024-03-23 14:32:15' },
+            { id: 'RGV-02', name: '穿梭车-02', status: 'running', position: 45, mileage: 9876, lastComm: '2024-03-23 14:31:42' },
+            { id: 'RGV-03', name: '穿梭车-03', status: 'standby', position: 75, mileage: 15234, lastComm: '2024-03-23 14:30:18' },
+            { id: 'RGV-04', name: '穿梭车-04', status: 'running', position: 105, mileage: 8765, lastComm: '2024-03-23 14:32:01' },
+            { id: 'RGV-05', name: '穿梭车-05', status: 'fault', position: 135, mileage: 23456, lastComm: '2024-03-23 14:25:33' },
+            { id: 'RGV-06', name: '穿梭车-06', status: 'running', position: 165, mileage: 11234, lastComm: '2024-03-23 14:31:55' },
+            { id: 'RGV-07', name: '穿梭车-07', status: 'running', position: 195, mileage: 7654, lastComm: '2024-03-23 14:32:08' },
+            { id: 'RGV-08', name: '穿梭车-08', status: 'standby', position: 225, mileage: 18987, lastComm: '2024-03-23 14:28:22' },
+        ];
+
+        const alertsData = [
+            { id: 1, level: 'fault', device: 'RGV-05', message: '电机过热保护触发，请检查散热系统', time: '14:25:33' },
+            { id: 2, level: 'warning', device: 'Lifter-02', message: '提升机运行时间超过8小时，建议维护', time: '14:18:45' },
+            { id: 3, level: 'warning', device: 'RGV-03', message: '穿梭车待机时间过长，请检查任务分配', time: '14:15:12' },
+            { id: 4, level: 'info', device: 'System', message: '系统定时备份完成', time: '14:00:00' },
+            { id: 5, level: 'fault', device: 'Conveyor-12', message: '传送带卡滞，传感器异常', time: '13:52:28' },
+            { id: 6, level: 'warning', device: 'RGV-08', message: '穿梭车电池电量低于30%', time: '13:45:10' },
+            { id: 7, level: 'info', device: 'PLC-Master', message: 'PLC主控固件版本更新检查完成', time: '13:30:00' },
+        ];
+
+        const tasksData = [
+            { id: 'T-20240323-001', desc: '压缩机配件 → 总装外5线', progress: 78, status: 'in_progress', from: '物资库1', to: '总装外5线' },
+            { id: 'T-20240323-002', desc: '冷凝器组件 → 成品仓库', progress: 45, status: 'in_progress', from: '两器车间', to: '成品仓库' },
+            { id: 'T-20240323-003', desc: '电子膨胀阀 → 控制器车间', progress: 92, status: 'in_progress', from: '物资库1', to: '控制器车间' },
+            { id: 'T-20240323-004', desc: '蒸发器翅片 → 钣喷车间', progress: 0, status: 'pending', from: '物资库1', to: '钣喷车间' },
+            { id: 'T-20240323-005', desc: '控制器面板 → 总装外4线', progress: 100, status: 'completed', from: '控制器车间', to: '总装外4线' },
+            { id: 'T-20240323-006', desc: '注塑件外壳 → 钣喷车间', progress: 15, status: 'in_progress', from: '注塑车间', to: '钣喷车间' },
+        ];
+
+        let selectedDevice = null;
+        let currentAlertFilter = 'all';
+
+        // ==================== RGV Track Map ====================
+        let rgvChart = null;
+        let rgvRefreshInterval = null;
+
+        function initRgvMap() {
+            rgvChart = echarts.init(document.getElementById('rgvMap'));
+
+            const trackWidth = 600;
+            const trackHeight = 250;
+            const leftX = 100;
+            const rightX = leftX + trackWidth;
+            const topY = 25;
+            const bottomY = topY + trackHeight;
+
+            function generateRailTrack() {
+                const points = [];
+                const segmentsPerSide = 50;
+                for (let i = 0; i <= segmentsPerSide; i++) {
+                    const ratio = i / segmentsPerSide;
+                    points.push([leftX + trackWidth * ratio, topY]);
+                }
+                for (let i = 1; i <= segmentsPerSide; i++) {
+                    const ratio = i / segmentsPerSide;
+                    points.push([rightX, topY + trackHeight * ratio]);
+                }
+                for (let i = 1; i <= segmentsPerSide; i++) {
+                    const ratio = i / segmentsPerSide;
+                    points.push([rightX - trackWidth * ratio, bottomY]);
+                }
+                for (let i = 1; i <= segmentsPerSide; i++) {
+                    const ratio = i / segmentsPerSide;
+                    points.push([leftX, bottomY - trackHeight * ratio]);
+                }
+                return points;
+            }
+
+            const trackPoints = generateRailTrack();
+
+            function generateSleepers() {
+                const sleepers = [];
+                const sleepersPerSide = 10;
+                for (let i = 0; i < sleepersPerSide; i++) {
+                    const ratio = (i + 0.5) / sleepersPerSide;
+                    sleepers.push({ value: [leftX + trackWidth * ratio, topY], angle: 90 });
+                }
+                for (let i = 0; i < sleepersPerSide; i++) {
+                    const ratio = (i + 0.5) / sleepersPerSide;
+                    sleepers.push({ value: [rightX, topY + trackHeight * ratio], angle: 0 });
+                }
+                for (let i = 0; i < sleepersPerSide; i++) {
+                    const ratio = (i + 0.5) / sleepersPerSide;
+                    sleepers.push({ value: [rightX - trackWidth * ratio, bottomY], angle: 90 });
+                }
+                for (let i = 0; i < sleepersPerSide; i++) {
+                    const ratio = (i + 0.5) / sleepersPerSide;
+                    sleepers.push({ value: [leftX, bottomY - trackHeight * ratio], angle: 0 });
+                }
+                return sleepers;
+            }
+
+            const sleepers = generateSleepers();
+
+            // Workshop definitions (simplified from original)
+            const workshopWidth = 80;
+            const workshopGap = 30;
+            const trackCenterY = (topY + bottomY) / 2;
+
+            const zhusuWidth = workshopWidth;
+            const zhusuHeight = 60;
+            const zhusuX = leftX - zhusuWidth;
+            const zhusuY = trackCenterY - zhusuHeight / 2 - 20 + 60 - 120;
+
+            const bapenWidth = workshopWidth;
+            const bapenHeight = 100;
+            const bapenX = leftX - bapenWidth;
+            const bapenY = zhusuY + zhusuHeight + workshopGap + 60 - 20;
+
+            function generateWorkshopBorder(x, y, w, h) {
+                return [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]];
+            }
+
+            const bapenBorder = generateWorkshopBorder(bapenX, bapenY, bapenWidth, bapenHeight);
+            const zhusuBorder = generateWorkshopBorder(zhusuX, zhusuY, zhusuWidth, zhusuHeight);
+
+            function generateInternalRails(x, y, w, h, count) {
+                const rails = [];
+                const spacing = h / (count + 1);
+                for (let i = 1; i <= count; i++) {
+                    const railY = y + spacing * i;
+                    rails.push([[x, railY], [x + w, railY]]);
+                }
+                return rails;
+            }
+
+            const bapenRails = generateInternalRails(bapenX, bapenY, bapenWidth, bapenHeight, 4);
+            const zhusuRails = generateInternalRails(zhusuX, zhusuY, zhusuWidth, zhusuHeight, 2);
+
+            const rightWorkshopWidth = 80;
+            const rightWorkshopGap = 30;
+
+            const wuzikuWidth = rightWorkshopWidth;
+            const wuzikuHeight = 100;
+            const wuzikuX = rightX;
+            const wuzikuY = zhusuY;
+
+            const controllerWidth = rightWorkshopWidth;
+            const controllerHeight = 100;
+            const controllerX = rightX;
+            const controllerY = wuzikuY + wuzikuHeight + rightWorkshopGap;
+
+            const wuzikuBorder = generateWorkshopBorder(wuzikuX, wuzikuY, wuzikuWidth, wuzikuHeight);
+            const controllerBorder = generateWorkshopBorder(controllerX, controllerY, controllerWidth, controllerHeight);
+            const wuzikuRails = generateInternalRails(wuzikuX, wuzikuY, wuzikuWidth, wuzikuHeight, 5);
+            const controllerRails = generateInternalRails(controllerX, controllerY, controllerWidth, controllerHeight, 5);
+
+            function generateVerticalRails() {
+                const outerRails = [];
+                const innerRails = [];
+                const railLength = 60;
+                const outerPositions = [0.45, 0.52, 0.58, 0.65, 0.72, 0.85];
+                for (let i = 0; i < 6; i++) {
+                    const x = leftX + trackWidth * outerPositions[i];
+                    outerRails.push([[x, topY], [x, topY - railLength]]);
+                }
+                const innerPositions = [0.48, 0.60, 0.70, 0.82];
+                for (let i = 0; i < 4; i++) {
+                    const x = leftX + trackWidth * innerPositions[i];
+                    innerRails.push([[x, topY], [x, topY + railLength]]);
+                }
+                return { outerRails, innerRails };
+            }
+
+            function generateBottomRails() {
+                const bottomRails = [];
+                const railLength = 60;
+                const startX = leftX + trackWidth * 0.55;
+                const endX = leftX + trackWidth * 0.92;
+                const spacing = (endX - startX) / 5;
+                for (let i = 0; i < 6; i++) {
+                    const x = startX + spacing * i;
+                    bottomRails.push([[x, bottomY], [x, bottomY + railLength]]);
+                }
+                return bottomRails;
+            }
+
+            const { outerRails, innerRails } = generateVerticalRails();
+            const bottomRails = generateBottomRails();
+
+            function generateRailSleepers(rails, isVertical) {
+                const sleepers = [];
+                const sleeperCount = 4;
+                rails.forEach(rail => {
+                    const startPoint = rail[0];
+                    const endPoint = rail[1];
+                    if (isVertical) {
+                        const x = startPoint[0];
+                        const yStart = Math.min(startPoint[1], endPoint[1]);
+                        const yEnd = Math.max(startPoint[1], endPoint[1]);
+                        const spacing = (yEnd - yStart) / (sleeperCount + 1);
+                        for (let i = 1; i <= sleeperCount; i++) {
+                            sleepers.push({ value: [x, yStart + spacing * i], angle: 0 });
+                        }
+                    }
+                });
+                return sleepers;
+            }
+
+            function generateHorizontalRailSleepers(rails) {
+                const sleepers = [];
+                const sleeperCount = 3;
+                rails.forEach(rail => {
+                    const y = rail[0][1];
+                    const xStart = Math.min(rail[0][0], rail[1][0]);
+                    const xEnd = Math.max(rail[0][0], rail[1][0]);
+                    const spacing = (xEnd - xStart) / (sleeperCount + 1);
+                    for (let i = 1; i <= sleeperCount; i++) {
+                        sleepers.push({ value: [xStart + spacing * i, y], angle: 90 });
+                    }
+                });
+                return sleepers;
+            }
+
+            function generateRailLines(rails, isVertical, offset) {
+                const leftLines = [];
+                const rightLines = [];
+                rails.forEach(rail => {
+                    const startPoint = rail[0];
+                    const endPoint = rail[1];
+                    if (isVertical) {
+                        const x = startPoint[0];
+                        leftLines.push([[x - offset, startPoint[1]], [x - offset, endPoint[1]]]);
+                        rightLines.push([[x + offset, startPoint[1]], [x + offset, endPoint[1]]]);
+                    } else {
+                        const y = startPoint[1];
+                        leftLines.push([[startPoint[0], y - offset], [endPoint[0], y - offset]]);
+                        rightLines.push([[startPoint[0], y + offset], [endPoint[0], y + offset]]);
+                    }
+                });
+                return { leftLines, rightLines };
+            }
+
+            const outerSleepers = generateRailSleepers(outerRails, true);
+            const innerSleepers = generateRailSleepers(innerRails, true);
+            const bottomSleepers = generateRailSleepers(bottomRails, true);
+            const outerRailLines = generateRailLines(outerRails, true, 6);
+            const innerRailLines = generateRailLines(innerRails, true, 6);
+            const bottomRailLines = generateRailLines(bottomRails, true, 6);
+            const bapenSleepers = generateHorizontalRailSleepers(bapenRails);
+            const zhusuSleepers = generateHorizontalRailSleepers(zhusuRails);
+            const wuzikuSleepers = generateHorizontalRailSleepers(wuzikuRails);
+            const controllerSleepers = generateHorizontalRailSleepers(controllerRails);
+            const bapenRailLines = generateRailLines(bapenRails, false, 5);
+            const zhusuRailLines = generateRailLines(zhusuRails, false, 5);
+            const wuzikuRailLines = generateRailLines(wuzikuRails, false, 5);
+            const controllerRailLines = generateRailLines(controllerRails, false, 5);
+
+            function makeRailSeries(rails, width) {
+                return rails.map(rail => ({
+                    type: 'line', data: rail, smooth: false, symbol: 'none',
+                    lineStyle: {
+                        color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0,
+                            colorStops: [{ offset: 0, color: '#6b7280' }, { offset: 0.5, color: '#a1a8b0' }, { offset: 1, color: '#6b7280' }] },
+                        width: width,
+                        shadowBlur: 5, shadowColor: 'rgba(0, 0, 0, 0.4)',
+                    },
+                    silent: true, z: 2,
+                }));
+            }
+
+            function makeRailLineSeries(lines, color) {
+                return [
+                    ...lines.leftLines.map(line => ({
+                        type: 'line', data: line, smooth: false, symbol: 'none',
+                        lineStyle: { color: color, width: 2, shadowBlur: 2, shadowColor: 'rgba(0, 0, 0, 0.3)' },
+                        silent: true, z: 4,
+                    })),
+                    ...lines.rightLines.map(line => ({
+                        type: 'line', data: line, smooth: false, symbol: 'none',
+                        lineStyle: { color: color, width: 2, shadowBlur: 2, shadowColor: 'rgba(0, 0, 0, 0.3)' },
+                        silent: true, z: 4,
+                    })),
+                ];
+            }
+
+            function makeSleeperSeries(data, size) {
+                return {
+                    type: 'scatter', symbol: 'rect', symbolSize: size, data: data,
+                    itemStyle: {
+                        color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0,
+                            colorStops: [{ offset: 0, color: '#d4a017' }, { offset: 0.5, color: '#f4d03f' }, { offset: 1, color: '#d4a017' }] },
+                        shadowBlur: 2, shadowColor: 'rgba(0, 0, 0, 0.3)',
+                    },
+                    silent: true, z: 3,
+                };
+            }
+
+            function makeWorkshopLabelSeries(x, y, w, text, color) {
+                return {
+                    type: 'scatter', symbolSize: 0,
+                    data: [[x + w / 2, y - 12]],
+                    label: {
+                        show: true, formatter: text, position: 'inside',
+                        color: color, fontSize: 12, fontWeight: 'bold',
+                        backgroundColor: 'rgba(0, 40, 80, 0.8)', padding: [3, 6],
+                        borderRadius: 4, borderColor: color, borderWidth: 1,
+                    },
+                    silent: true, z: 4,
+                };
+            }
+
+            function makeWorkshopBorderSeries(border, color) {
+                return {
+                    type: 'line', data: border, smooth: false, symbol: 'none',
+                    lineStyle: { color: color, width: 2, type: 'dashed', shadowBlur: 10, shadowColor: `rgba(${hexToRgb(color)}, 0.5)` },
+                    silent: true, z: 3,
+                };
+            }
+
+            function hexToRgb(hex) {
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                return `${r}, ${g}, ${b}`;
+            }
+
+            const option = {
+                backgroundColor: 'transparent',
+                grid: { left: 20, right: 20, top: 20, bottom: 20 },
+                xAxis: { type: 'value', min: -30, max: 830, show: false },
+                yAxis: { type: 'value', min: -60, max: 360, show: false },
+                series: [
+                    // 铁轨外轨
+                    { type: 'line', data: trackPoints, smooth: false, symbol: 'none',
+                        lineStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [{ offset: 0, color: '#5a6c7d' }, { offset: 0.5, color: '#8a9cad' }, { offset: 1, color: '#5a6c7d' }] },
+                            width: 18, shadowBlur: 8, shadowColor: 'rgba(0, 0, 0, 0.5)' },
+                        silent: true, z: 1 },
+                    // 铁轨内轨
+                    { type: 'line', data: trackPoints, smooth: false, symbol: 'none',
+                        lineStyle: { color: '#1a2332', width: 10, shadowBlur: 4, shadowColor: 'rgba(0, 0, 0, 0.8)' },
+                        silent: true, z: 2 },
+                    // 铁轨高光
+                    { type: 'line', data: trackPoints, smooth: false, symbol: 'none',
+                        lineStyle: { color: 'rgba(100, 200, 255, 0.15)', width: 22, shadowBlur: 25, shadowColor: 'rgba(100, 200, 255, 0.3)' },
+                        silent: true, z: 0 },
+                    // 枕木
+                    { type: 'scatter', symbol: 'rect', symbolSize: [4, 22], data: sleepers,
+                        itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0,
+                            colorStops: [{ offset: 0, color: '#4a4035' }, { offset: 0.5, color: '#6a5d4d' }, { offset: 1, color: '#4a4035' }] },
+                            shadowBlur: 3, shadowColor: 'rgba(0, 0, 0, 0.6)' },
+                        silent: true, z: 1 },
+                    // 上边纵向铁轨
+                    ...makeRailSeries(outerRails, 5),
+                    ...makeRailSeries(innerRails, 5),
+                    ...makeRailSeries(bottomRails, 5),
+                    // 纵向铁轨枕木
+                    makeSleeperSeries(outerSleepers, [12, 3]),
+                    makeSleeperSeries(innerSleepers, [12, 3]),
+                    makeSleeperSeries(bottomSleepers, [12, 3]),
+                    // 纵向铁轨细线
+                    ...makeRailLineSeries(outerRailLines, '#8B4513'),
+                    ...makeRailLineSeries(innerRailLines, '#8B4513'),
+                    ...makeRailLineSeries(bottomRailLines, '#8B4513'),
+                    // 钣喷车间
+                    makeWorkshopBorderSeries(bapenBorder, '#00b4ff'),
+                    makeWorkshopLabelSeries(bapenX, bapenY, bapenWidth, '钣喷车间', '#00b4ff'),
+                    ...makeRailSeries(bapenRails, 5),
+                    makeSleeperSeries(bapenSleepers, [3, 10]),
+                    ...makeRailLineSeries(bapenRailLines, '#8B4513'),
+                    // 注塑车间
+                    makeWorkshopBorderSeries(zhusuBorder, '#10b981'),
+                    makeWorkshopLabelSeries(zhusuX, zhusuY, zhusuWidth, '注塑车间', '#10b981'),
+                    ...makeRailSeries(zhusuRails, 5),
+                    makeSleeperSeries(zhusuSleepers, [3, 10]),
+                    ...makeRailLineSeries(zhusuRailLines, '#8B4513'),
+                    // 物资库1
+                    makeWorkshopBorderSeries(wuzikuBorder, '#f59e0b'),
+                    makeWorkshopLabelSeries(wuzikuX, wuzikuY, wuzikuWidth, '物资库1', '#f59e0b'),
+                    ...makeRailSeries(wuzikuRails, 5),
+                    makeSleeperSeries(wuzikuSleepers, [3, 10]),
+                    ...makeRailLineSeries(wuzikuRailLines, '#8B4513'),
+                    // 控制器车间
+                    makeWorkshopBorderSeries(controllerBorder, '#8b5cf6'),
+                    makeWorkshopLabelSeries(controllerX, controllerY, controllerWidth, '控制器车间', '#8b5cf6'),
+                    ...makeRailSeries(controllerRails, 5),
+                    makeSleeperSeries(controllerSleepers, [3, 10]),
+                    ...makeRailLineSeries(controllerRailLines, '#8B4513'),
+                    // 顶部车间标签
+                    { type: 'scatter', symbolSize: 0,
+                        data: [[leftX + trackWidth * 0.65, topY - 25]],
+                        label: { show: true, formatter: '两器车间', position: 'inside', color: '#f97316', fontSize: 12,
+                            fontWeight: 'bold', backgroundColor: 'rgba(0, 40, 80, 0.8)', padding: [3, 6],
+                            borderRadius: 4, borderColor: '#f97316', borderWidth: 1 },
+                        silent: true, z: 10 },
+                    { type: 'scatter', symbolSize: 0,
+                        data: [[leftX + trackWidth * 0.54, topY + 75]],
+                        label: { show: true, formatter: '总装外4线', position: 'inside', color: '#8b5cf6', fontSize: 12,
+                            fontWeight: 'bold', backgroundColor: 'rgba(0, 40, 80, 0.8)', padding: [3, 6],
+                            borderRadius: 4, borderColor: '#8b5cf6', borderWidth: 1 },
+                        silent: true, z: 10 },
+                    { type: 'scatter', symbolSize: 0,
+                        data: [[leftX + trackWidth * 0.76, topY + 75]],
+                        label: { show: true, formatter: '总装外5线', position: 'inside', color: '#06b6d4', fontSize: 12,
+                            fontWeight: 'bold', backgroundColor: 'rgba(0, 40, 80, 0.8)', padding: [3, 6],
+                            borderRadius: 4, borderColor: '#06b6d4', borderWidth: 1 },
+                        silent: true, z: 10 },
+                    { type: 'scatter', symbolSize: 0,
+                        data: [[leftX + trackWidth * 0.735, bottomY - 15]],
+                        label: { show: true, formatter: '成品仓库', position: 'inside', color: '#ec4899', fontSize: 12,
+                            fontWeight: 'bold', backgroundColor: 'rgba(0, 40, 80, 0.8)', padding: [3, 6],
+                            borderRadius: 4, borderColor: '#ec4899', borderWidth: 1 },
+                        silent: true, z: 10 },
+                    // RGV小车
+                    {
+                        id: 'rgvVehicles',
+                        type: 'scatter',
+                        symbol: 'path://M4,2 L6,2 L6,4 L10,4 L10,8 L8,8 L8,10 L2,10 L2,8 L0,8 L0,4 L4,4 Z',
+                        symbolSize: [28, 20],
+                        data: [
+                            { value: [250, 25], name: '穿梭车-01', id: 'RGV-01', symbolRotate: 90, status: 'running' },
+                            { value: [700, 150], name: '穿梭车-02', id: 'RGV-02', symbolRotate: 180, status: 'standby' },
+                            { value: [400, 275], name: '穿梭车-03', id: 'RGV-03', symbolRotate: 270, status: 'running' },
+                            { value: [100, 100], name: '穿梭车-04', id: 'RGV-04', symbolRotate: 0, status: 'fault' }
+                        ],
+                        itemStyle: {
+                            color: function(params) {
+                                const s = params.data.status;
+                                if (s === 'running') return { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                                    colorStops: [{ offset: 0, color: '#00ff88' }, { offset: 1, color: '#00cc6a' }] };
+                                if (s === 'standby') return { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                                    colorStops: [{ offset: 0, color: '#ffcc00' }, { offset: 1, color: '#ffaa00' }] };
+                                if (s === 'fault') return { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                                    colorStops: [{ offset: 0, color: '#ff6b6b' }, { offset: 1, color: '#ee5a5a' }] };
+                                return '#4facfe';
+                            },
+                            borderColor: function(params) {
+                                const s = params.data.status;
+                                if (s === 'running') return '#00ff88';
+                                if (s === 'standby') return '#ffcc00';
+                                if (s === 'fault') return '#ff6b6b';
+                                return '#00b4ff';
+                            },
+                            borderWidth: 2, shadowBlur: 15,
+                            shadowColor: function(params) {
+                                const s = params.data.status;
+                                if (s === 'running') return 'rgba(0, 255, 136, 0.8)';
+                                if (s === 'standby') return 'rgba(255, 204, 0, 0.8)';
+                                if (s === 'fault') return 'rgba(255, 107, 107, 0.8)';
+                                return 'rgba(0, 180, 255, 0.8)';
+                            },
+                            shadowOffsetY: 3,
+                        },
+                        label: {
+                            show: true, formatter: '{b}', position: 'top',
+                            color: '#fff', fontSize: 12, fontWeight: 'bold', distance: 8,
+                            backgroundColor: function(params) {
+                                const s = params.data.status;
+                                if (s === 'running') return 'rgba(0, 150, 100, 0.85)';
+                                if (s === 'standby') return 'rgba(180, 150, 0, 0.85)';
+                                if (s === 'fault') return 'rgba(180, 50, 50, 0.85)';
+                                return 'rgba(0, 100, 180, 0.85)';
+                            },
+                            padding: [4, 10], borderRadius: 4,
+                            borderColor: function(params) {
+                                const s = params.data.status;
+                                if (s === 'running') return 'rgba(0, 255, 136, 0.5)';
+                                if (s === 'standby') return 'rgba(255, 204, 0, 0.5)';
+                                if (s === 'fault') return 'rgba(255, 107, 107, 0.5)';
+                                return 'rgba(0, 180, 255, 0.5)';
+                            },
+                            borderWidth: 1,
+                        },
+                        emphasis: {
+                            scale: 1.3,
+                            itemStyle: {
+                                shadowBlur: 25,
+                                shadowColor: function(params) {
+                                    const s = params.data.status;
+                                    if (s === 'running') return 'rgba(0, 255, 136, 1)';
+                                    if (s === 'standby') return 'rgba(255, 204, 0, 1)';
+                                    if (s === 'fault') return 'rgba(255, 107, 107, 1)';
+                                    return 'rgba(0, 180, 255, 1)';
+                                },
+                            }
+                        },
+                        z: 15,
+                    },
+                ],
+            };
+
+            rgvChart.setOption(option);
+
+            const vehicleSeriesIndex = option.series.length - 1;
+            rgvChart.on('click', function(params) {
+                if (params.seriesIndex === vehicleSeriesIndex) {
+                    openRgvCard(params.data.id, params.data.name, params.data.value);
+                }
+            });
+
+            window.addEventListener('resize', () => { rgvChart.resize(); });
+            startRgvPositionRefresh();
+        }
+
+        // RGV Animation
+        const rgvAngles = { 'RGV-01': 0, 'RGV-02': 90, 'RGV-03': 180, 'RGV-04': 270 };
+        const ANGLE_INCREMENTS = { 'RGV-01': 0.75, 'RGV-02': 0.5, 'RGV-03': 0.7, 'RGV-04': 0.6 };
+
+        function getRgvPositionWithRotation(angle) {
+            const trackWidth = 600, trackHeight = 250;
+            const leftX = 100, rightX = leftX + trackWidth;
+            const topY = 25, bottomY = topY + trackHeight;
+            const perimeter = 2 * (trackWidth + trackHeight);
+            const t = (angle / 360) * perimeter;
+            let x, y, rotation;
+
+            if (t < trackWidth) {
+                const ratio = t / trackWidth;
+                x = leftX + trackWidth * ratio;
+                y = topY;
+                rotation = 90;
+            } else if (t < trackWidth + trackHeight) {
+                const ratio = (t - trackWidth) / trackHeight;
+                x = rightX;
+                y = topY + trackHeight * ratio;
+                rotation = 180;
+            } else if (t < 2 * trackWidth + trackHeight) {
+                const ratio = (t - trackWidth - trackHeight) / trackWidth;
+                x = rightX - trackWidth * ratio;
+                y = bottomY;
+                rotation = 270;
+            } else {
+                const ratio = (t - 2 * trackWidth - trackHeight) / trackHeight;
+                x = leftX;
+                y = bottomY - trackHeight * ratio;
+                rotation = 0;
+            }
+            return { position: [x, y], rotation: rotation };
+        }
+
+        function generateRgvData() {
+            const rgvList = [
+                { id: 'RGV-01', name: '穿梭车-01' },
+                { id: 'RGV-02', name: '穿梭车-02' },
+                { id: 'RGV-03', name: '穿梭车-03' },
+                { id: 'RGV-04', name: '穿梭车-04' }
+            ];
+
+            return rgvList.map((rgv, index) => {
+                const rgvId = rgv.id;
+                let currentAngle = rgvAngles[rgvId];
+                const increment = ANGLE_INCREMENTS[rgvId];
+                currentAngle = (currentAngle - increment + 360) % 360;
+                rgvAngles[rgvId] = currentAngle;
+
+                const posData = getRgvPositionWithRotation(currentAngle);
+                let status = 'running';
+                if (index === 1 && currentAngle > 180 && currentAngle < 270) status = 'standby';
+                else if (index === 3 && currentAngle > 0 && currentAngle < 45) status = 'fault';
+
+                return {
+                    value: posData.position,
+                    name: rgv.name,
+                    id: rgvId,
+                    symbolRotate: posData.rotation,
+                    status: status
+                };
+            });
+        }
+
+        function updateRgvPositions() {
+            if (!rgvChart) return;
+            const newRgvData = generateRgvData();
+            newRgvData.forEach((rgv) => {
+                if (rgvDataMap[rgv.id]) {
+                    const x = Math.round(rgv.value[0]);
+                    const y = Math.round(rgv.value[1]);
+                    let positionText = '';
+                    if (y <= 30) positionText = `轨道上边 (${x}, ${y})`;
+                    else if (x >= 690) positionText = `轨道右边 (${x}, ${y})`;
+                    else if (y >= 270) positionText = `轨道下边 (${x}, ${y})`;
+                    else positionText = `轨道左边 (${x}, ${y})`;
+                    rgvDataMap[rgv.id].position = positionText;
+                    rgvDataMap[rgv.id].status = rgv.status;
+                    rgvDataMap[rgv.id].statusText = rgv.status === 'running' ? '运行中' : (rgv.status === 'standby' ? '待机' : '故障');
+                }
+            });
+            rgvChart.setOption({ series: [{ id: 'rgvVehicles', data: newRgvData }] });
+        }
+
+        function startRgvPositionRefresh() {
+            updateRgvPositions();
+            if (rgvRefreshInterval) clearInterval(rgvRefreshInterval);
+            rgvRefreshInterval = setInterval(updateRgvPositions, 1000);
+        }
+
+        // ==================== RGV Detail Card ====================
+        let currentRgvId = null;
+        let rgvUpdateInterval = null;
+
+        const rgvDataMap = {
+            'RGV-01': {
+                position: '轨道上边-A段 (250, 25)',
+                material: '压缩机-转子组件', quantity: '24 件',
+                mesOrder: 'MES-20240323-001', startTime: '2024-03-23 14:32:18',
+                eta: '2024-03-23 14:52:30', destination: '总装外5线-装配岗03',
+                operator: '张三 (工号: W2024001)', status: 'running', statusText: '运行中'
+            },
+            'RGV-02': {
+                position: '轨道右边-B段 (700, 150)',
+                material: '冷凝器-铜管翅片', quantity: '36 件',
+                mesOrder: 'MES-20240323-002', startTime: '2024-03-23 14:45:22',
+                eta: '2024-03-23 15:05:00', destination: '成品仓库-入库岗02',
+                operator: '李四 (工号: W2024002)', status: 'standby', statusText: '待机'
+            },
+            'RGV-03': {
+                position: '轨道下边-C段 (400, 275)',
+                material: '蒸发器-铝箔翅片', quantity: '18 件',
+                mesOrder: 'MES-20240323-003', startTime: '2024-03-23 14:28:10',
+                eta: '2024-03-23 14:48:45', destination: '总装外4线-装配岗01',
+                operator: '王五 (工号: W2024003)', status: 'running', statusText: '运行中'
+            },
+            'RGV-04': {
+                position: '轨道左边-D段 (100, 100)',
+                material: '电子膨胀阀-控制器', quantity: '42 件',
+                mesOrder: 'MES-20240323-004', startTime: '2024-03-23 14:50:05',
+                eta: '2024-03-23 15:10:20', destination: '两器车间-焊接岗05',
+                operator: '赵六 (工号: W2024004)', status: 'fault', statusText: '故障'
+            }
+        };
+
+        function openRgvCard(rgvId, rgvName) {
+            currentRgvId = rgvId;
+            const data = rgvDataMap[rgvId];
+            if (!data) return;
+
+            document.getElementById('rgvCardTitle').textContent = rgvName + ' 运输详情';
+            const statusElement = document.getElementById('rgvStatus');
+            statusElement.textContent = data.statusText;
+            if (data.status === 'running') statusElement.style.color = '#00ff88';
+            else if (data.status === 'standby') statusElement.style.color = '#ffcc00';
+            else if (data.status === 'fault') statusElement.style.color = '#ff6b6b';
+
+            document.getElementById('rgvPosition').textContent = data.position;
+            document.getElementById('rgvMaterial').textContent = data.material;
+            document.getElementById('rgvQuantity').textContent = data.quantity;
+            document.getElementById('rgvMesOrder').textContent = data.mesOrder;
+            document.getElementById('rgvStartTime').textContent = data.startTime;
+            document.getElementById('rgvEta').textContent = data.eta;
+            document.getElementById('rgvDestination').textContent = data.destination;
+            document.getElementById('rgvOperator').textContent = data.operator;
+
+            const card = document.getElementById('rgvCard');
+            card.classList.add('show');
+            setCardToCenterPosition();
+
+            if (rgvUpdateInterval) clearInterval(rgvUpdateInterval);
+            updateRgvElapsedTime(data.startTime);
+            rgvUpdateInterval = setInterval(() => { updateRgvElapsedTime(data.startTime); }, 1000);
+        }
+
+        function setCardToCenterPosition() {
+            const card = document.getElementById('rgvCard');
+            if (!card) return;
+            const rgvMap = document.getElementById('rgvMap');
+            const mapRect = rgvMap.getBoundingClientRect();
+            const cardWidth = 320;
+            const cardHeight = card.offsetHeight || 350;
+            const left = mapRect.width / 2 - cardWidth / 2;
+            const top = mapRect.height / 2 - cardHeight / 2;
+            card.style.left = left + 'px';
+            card.style.top = top + 'px';
+        }
+
+        function closeRgvCard() {
+            document.getElementById('rgvCard').classList.remove('show');
+            if (rgvUpdateInterval) { clearInterval(rgvUpdateInterval); rgvUpdateInterval = null; }
+            currentRgvId = null;
+        }
+
+        function updateRgvElapsedTime(startTimeStr) {
+            const startTime = new Date(startTimeStr);
+            const elapsed = Date.now() - startTime;
+            const h = Math.floor(elapsed / 3600000);
+            const m = Math.floor((elapsed % 3600000) / 60000);
+            const s = Math.floor((elapsed % 60000) / 1000);
+            const elapsedElement = document.getElementById('rgvElapsedTime');
+            if (elapsedElement) {
+                elapsedElement.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            }
+        }
+
+        // ==================== Alerts ====================
+        function renderAlerts() {
+            const container = document.getElementById('alertList');
+            const filtered = currentAlertFilter === 'all'
+                ? alertsData
+                : alertsData.filter(a => a.level === currentAlertFilter);
+            document.getElementById('alertCount').textContent = filtered.length;
+
+            container.innerHTML = filtered.map(alert => `
+                <div class="alert-item ${alert.level}" onclick="showAlertDetail(${alert.id})">
+                    <div class="alert-header">
+                        <span class="alert-level ${alert.level}">${getAlertLevelText(alert.level)}</span>
+                        <span class="alert-time">${alert.time}</span>
+                    </div>
+                    <div class="alert-device">${alert.device}</div>
+                    <div class="alert-message">${alert.message}</div>
+                </div>
+            `).join('');
+        }
+
+        function getAlertLevelText(level) {
+            return { fault: '故障', warning: '警告', info: '信息' }[level] || level;
+        }
+
+        // ==================== Task Queue ====================
+        function renderTasks() {
+            const container = document.getElementById('taskList');
+            document.getElementById('taskCount').textContent = tasksData.length;
+
+            container.innerHTML = tasksData.map(task => `
+                <div class="task-item">
+                    <div class="task-progress-ring" id="ring-${task.id}"></div>
+                    <div class="task-info">
+                        <div class="task-id">${task.id}</div>
+                        <div class="task-desc">${task.desc}</div>
+                        <div class="task-meta">${task.from} → ${task.to}</div>
+                    </div>
+                    <span class="task-status ${task.status}">${task.status === 'in_progress' ? '进行中' : (task.status === 'pending' ? '等待中' : '已完成')}</span>
+                </div>
+            `).join('');
+
+            // 初始化任务进度环
+            tasksData.forEach(task => {
+                const el = document.getElementById('ring-' + task.id);
+                if (el) {
+                    const chart = echarts.init(el);
+                    chart.setOption({
+                        series: [{
+                            type: 'pie',
+                            radius: ['70%', '95%'],
+                            silent: true,
+                            label: { show: true, position: 'center', formatter: `${task.progress}%`, fontSize: 10, color: '#fff' },
+                            data: [
+                                { value: task.progress, itemStyle: { color: task.status === 'completed' ? '#00b4ff' : '#00ff88' } },
+                                { value: 100 - task.progress, itemStyle: { color: 'rgba(255, 255, 255, 0.1)' } }
+                            ],
+                        }],
+                    });
+                }
+            });
+        }
+
+        // ==================== Bottom Charts ====================
+        function initTrendCharts() {
+            // 吞吐量趋势图
+            const chartThroughput = echarts.init(document.getElementById('chartThroughput'));
+            const hours = ['00:00', '02:00', '04:00', '06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'];
+            const throughputData = [720, 680, 520, 480, 650, 820, 880, 900, 856, 840, 790, 760];
+
+            chartThroughput.setOption({
+                grid: { left: 40, right: 20, top: 10, bottom: 25 },
+                xAxis: {
+                    type: 'category', data: hours,
+                    axisLine: { lineStyle: { color: 'rgba(0, 180, 255, 0.2)' } },
+                    axisLabel: { color: 'rgba(255, 255, 255, 0.4)', fontSize: 9, interval: 2 },
+                },
+                yAxis: {
+                    type: 'value', min: 400,
+                    splitLine: { lineStyle: { color: 'rgba(0, 180, 255, 0.08)' } },
+                    axisLabel: { color: 'rgba(255, 255, 255, 0.4)', fontSize: 10 },
+                },
+                series: [{
+                    type: 'line', data: throughputData, smooth: true, symbol: 'circle', symbolSize: 4,
+                    lineStyle: { color: '#00b4ff', width: 2, shadowBlur: 10, shadowColor: 'rgba(0, 180, 255, 0.4)' },
+                    itemStyle: { color: '#00b4ff' },
+                    areaStyle: {
+                        color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [{ offset: 0, color: 'rgba(0, 180, 255, 0.3)' }, { offset: 1, color: 'rgba(0, 180, 255, 0.02)' }] }
+                    },
+                }],
+            });
+
+            // 任务完成率图
+            const chartCompletion = echarts.init(document.getElementById('chartCompletion'));
+            const completionData = [92, 88, 91, 85, 90, 87, 93, 89, 95, 91, 88, 94];
+
+            chartCompletion.setOption({
+                grid: { left: 40, right: 20, top: 10, bottom: 25 },
+                xAxis: {
+                    type: 'category', data: hours,
+                    axisLine: { lineStyle: { color: 'rgba(0, 180, 255, 0.2)' } },
+                    axisLabel: { color: 'rgba(255, 255, 255, 0.4)', fontSize: 9, interval: 2 },
+                },
+                yAxis: {
+                    type: 'value', min: 80, max: 100,
+                    splitLine: { lineStyle: { color: 'rgba(0, 180, 255, 0.08)' } },
+                    axisLabel: { color: 'rgba(255, 255, 255, 0.4)', fontSize: 10 },
+                },
+                series: [{
+                    type: 'bar', data: completionData, barWidth: 12,
+                    itemStyle: {
+                        color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [{ offset: 0, color: '#00ff88' }, { offset: 1, color: 'rgba(0, 255, 136, 0.3)' }] },
+                        borderRadius: [4, 4, 0, 0],
+                        shadowBlur: 8, shadowColor: 'rgba(0, 255, 136, 0.3)',
+                    },
+                }, {
+                    type: 'line', data: completionData, smooth: true, symbol: 'none',
+                    lineStyle: { color: '#fff', width: 1.5, type: 'dashed' },
+                }],
+            });
+
+            window.addEventListener('resize', () => {
+                chartThroughput.resize();
+                chartCompletion.resize();
+            });
+        }
+
+        // ==================== KPI Sparklines ====================
+        function initSparklines() {
+            const sparkConfigs = [
+                { id: 'sparkTotal', color: '#00b4ff' },
+                { id: 'sparkThroughput', color: '#00ff88' },
+                { id: 'sparkOnline', color: '#ffaa00' },
+                { id: 'sparkResponse', color: '#ff6b9d' },
+                { id: 'sparkFault', color: '#ff4444' },
+                { id: 'sparkCompletion', color: '#00ff88' },
+                { id: 'sparkUtil', color: '#8b5cf6' },
+                { id: 'sparkPending', color: '#f59e0b' },
+            ];
+
+            sparkConfigs.forEach(cfg => {
+                const el = document.getElementById(cfg.id);
+                if (!el) return;
+                const chart = echarts.init(el);
+                const data = Array.from({ length: 10 }, () => Math.random() * 100);
+                chart.setOption({
+                    grid: { left: 0, right: 0, top: 2, bottom: 2 },
+                    xAxis: { type: 'category', show: false, data: data.map((_, i) => i) },
+                    yAxis: { type: 'value', show: false, min: 0 },
+                    series: [{
+                        type: 'line', data: data, smooth: true, symbol: 'none',
+                        lineStyle: { color: cfg.color, width: 1.5 },
+                        areaStyle: { color: cfg.color.replace(')', ', 0.15)').replace('rgb', 'rgba').replace('#00b4ff', 'rgba(0, 180, 255, 0.15)').replace('#00ff88', 'rgba(0, 255, 136, 0.15)').replace('#ffaa00', 'rgba(255, 170, 0, 0.15)').replace('#ff6b9d', 'rgba(255, 107, 157, 0.15)').replace('#ff4444', 'rgba(255, 68, 68, 0.15)') },
+                    }],
+                });
+            });
+        }
+
+        // ==================== Modal ====================
+        function showDeviceModal(device) {
+            selectedDevice = device;
+            document.getElementById('modalTitle').textContent = device.name;
+            document.getElementById('modalDeviceName').textContent = device.name;
+            document.getElementById('modalDeviceType').textContent = '穿梭车';
+            document.getElementById('modalDeviceStatus').textContent = getStatusText(device.status);
+            document.getElementById('modalDeviceStatus').className = 'info-value status-' + device.status;
+            document.getElementById('modalDevicePosition').textContent = '位置 ' + device.position + '°';
+            document.getElementById('modalDeviceMileage').textContent = device.mileage.toLocaleString() + ' km';
+            document.getElementById('modalDeviceLastComm').textContent = device.lastComm;
+            document.getElementById('deviceModal').classList.add('active');
+        }
+
+        function showAlertDetail(alertId) {
+            const alert = alertsData.find(a => a.id === alertId);
+            if (alert) {
+                const device = rgvDataStatic.find(r => r.id === alert.device) || { name: alert.device, status: 'unknown', position: 0, mileage: 0, lastComm: '-' };
+                showDeviceModal(device);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('deviceModal').classList.remove('active');
+        }
+
+        function getStatusText(status) {
+            return { running: '运行中', standby: '待机', fault: '故障', unknown: '未知' }[status] || status;
+        }
+
+        function restartDevice() {
+            if (selectedDevice) {
+                alert('正在重启 ' + selectedDevice.name + '...');
+                selectedDevice.status = 'running';
+                closeModal();
+            }
+        }
+
+        function pauseDevice() {
+            if (selectedDevice) {
+                alert('已暂停 ' + selectedDevice.name);
+                selectedDevice.status = 'standby';
+                closeModal();
+            }
+        }
+
+        // ==================== KPI Update with Animation ====================
+        const kpiState = {
+            totalTasks: 1286, throughput: 856, onlineRate: 96.8, responseTime: 45, faultCount: 2,
+            completionRate: 92.5, utilRate: 78.3, pendingTasks: 28
+        };
+
+        function animateNumber(el, oldVal, newVal, decimals, suffix) {
+            const duration = 800;
+            const start = performance.now();
+            const id = el.id;
+            const diff = newVal - oldVal;
+            if (diff > 0) {
+                el.classList.add('flash-up');
+                setTimeout(function() { el.classList.remove('flash-up'); }, 1000);
+            } else if (diff < 0) {
+                el.classList.add('flash-down');
+                setTimeout(function() { el.classList.remove('flash-down'); }, 1000);
+            }
+
+            function step(now) {
+                const elapsed = now - start;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const current = oldVal + diff * eased;
+                document.getElementById(id).textContent = decimals === 0
+                    ? Math.round(current).toLocaleString()
+                    : current.toFixed(decimals);
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                } else {
+                    document.getElementById(id).textContent = decimals === 0
+                        ? Math.round(newVal).toLocaleString()
+                        : newVal.toFixed(decimals);
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        function updateKPI() {
+            var newTotal = 1200 + Math.floor(Math.random() * 200);
+            var newThroughput = 800 + Math.floor(Math.random() * 100);
+            var newOnline = 95 + Math.random() * 3;
+            var newResponse = 40 + Math.floor(Math.random() * 20);
+            var newFault = Math.floor(Math.random() * 3 + 1);
+            var newCompletion = 88 + Math.random() * 8;
+            var newUtil = 72 + Math.random() * 15;
+            var newPending = 20 + Math.floor(Math.random() * 20);
+
+            animateNumber(document.getElementById('totalTasks'), kpiState.totalTasks, newTotal, 0);
+            animateNumber(document.getElementById('throughput'), kpiState.throughput, newThroughput, 0);
+            animateNumber(document.getElementById('onlineRate'), kpiState.onlineRate, newOnline, 1);
+            animateNumber(document.getElementById('responseTime'), kpiState.responseTime, newResponse, 0);
+            animateNumber(document.getElementById('faultCount'), kpiState.faultCount, newFault, 0);
+            animateNumber(document.getElementById('completionRate'), kpiState.completionRate, newCompletion, 1);
+            animateNumber(document.getElementById('utilRate'), kpiState.utilRate, newUtil, 1);
+            animateNumber(document.getElementById('pendingTasks'), kpiState.pendingTasks, newPending, 0);
+
+            kpiState.totalTasks = newTotal;
+            kpiState.throughput = newThroughput;
+            kpiState.onlineRate = newOnline;
+            kpiState.responseTime = newResponse;
+            kpiState.faultCount = newFault;
+            kpiState.completionRate = newCompletion;
+            kpiState.utilRate = newUtil;
+            kpiState.pendingTasks = newPending;
+
+            document.getElementById('lastUpdate').textContent = new Date().toTimeString().slice(0, 8);
+        }
+
+        // ==================== Alert Filter ====================
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('alert-filter-btn')) {
+                document.querySelectorAll('.alert-filter-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentAlertFilter = e.target.dataset.filter;
+                renderAlerts();
+            }
+        });
+
+        // ==================== Initialize ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            initRgvMap();
+            initTrendCharts();
+            initSparklines();
+            renderAlerts();
+            renderTasks();
+            updateKPI();
+
+            setInterval(updateKPI, 5000);
+
+            // 模拟新报警
+            setInterval(() => {
+                const levels = ['fault', 'warning', 'info'];
+                const devices = ['RGV-0' + (Math.floor(Math.random() * 8) + 1), 'Conveyor-' + (Math.floor(Math.random() * 20) + 1), 'Lifter-0' + (Math.floor(Math.random() * 4) + 1)];
+                const messages = ['设备状态变化提醒', '传感器信号异常，请检查', '运行参数超出阈值', '通讯延迟警告', '维护时间到期提醒'];
+                const newAlert = {
+                    id: Date.now(),
+                    level: levels[Math.floor(Math.random() * 3)],
+                    device: devices[Math.floor(Math.random() * 3)],
+                    message: messages[Math.floor(Math.random() * 5)],
+                    time: new Date().toTimeString().slice(0, 8),
+                };
+                alertsData.unshift(newAlert);
+                if (alertsData.length > 20) alertsData.pop();
+                renderAlerts();
+            }, 15000);
+
+            // 模拟任务进度更新
+            setInterval(() => {
+                tasksData.forEach(t => {
+                    if (t.status === 'in_progress') {
+                        t.progress = Math.min(100, t.progress + Math.floor(Math.random() * 5));
+                        if (t.progress >= 100) t.status = 'completed';
+                    }
+                });
+                renderTasks();
+            }, 8000);
+        });
+
+        document.getElementById('deviceModal').addEventListener('click', (e) => {
+            if (e.target.id === 'deviceModal') closeModal();
+        });
+    </script>
+</body>
+</html>

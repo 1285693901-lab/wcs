@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环线WCS物流跟踪 - 设备管理 增强版</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #061018 0%, #0d2840 50%, #081525 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* ========== Header ========== */
+        .header {
+            background: linear-gradient(90deg, rgba(0, 50, 100, 0.9) 0%, rgba(0, 70, 140, 0.85) 50%, rgba(0, 50, 100, 0.9) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            border-radius: 12px;
+            padding: 16px 40px;
+            position: relative;
+            overflow: hidden;
+            height: 90px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(0, 180, 255, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        .tech-circuit {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            opacity: 0.12;
+            pointer-events: none;
+            background-image:
+                linear-gradient(90deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%),
+                linear-gradient(0deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%);
+            background-size: 80px 80px;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00b4ff, transparent);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.5), transparent);
+        }
+
+        .corner {
+            position: absolute;
+            width: 24px; height: 24px;
+            border-color: #00b4ff;
+            border-style: solid;
+        }
+        .corner-tl { top: 5px; left: 5px; border-width: 2px 0 0 2px; }
+        .corner-tr { top: 5px; right: 5px; border-width: 2px 2px 0 0; }
+        .corner-bl { bottom: 5px; left: 5px; border-width: 0 0 2px 2px; }
+        .corner-br { bottom: 5px; right: 5px; border-width: 0 2px 2px 0; }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 8px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 0 40px rgba(0, 180, 255, 0.8), 0 0 80px rgba(0, 180, 255, 0.4);
+        }
+
+        .header-subtitle {
+            text-align: center;
+            color: rgba(0, 180, 255, 0.6);
+            font-size: 13px;
+            margin-top: 6px;
+            letter-spacing: 4px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .nav-buttons {
+            position: absolute;
+            top: calc(60% + 8px);
+            left: 50%;
+            transform: translate(calc(-50% - 416px), -50%);
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            padding: 7px 14px;
+            background: rgba(0, 60, 100, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 100, 150, 0.6);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.3);
+        }
+
+        .nav-btn.active {
+            background: rgba(0, 180, 255, 0.25);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #00b4ff;
+            font-weight: 600;
+            box-shadow: 0 0 20px rgba(0, 180, 255, 0.4);
+        }
+
+        /* ========== Status Summary Bar ========== */
+        .status-summary {
+            display: flex;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .summary-item {
+            flex: 1;
+            background: rgba(0, 40, 80, 0.5);
+            border: 1px solid rgba(0, 180, 255, 0.2);
+            border-radius: 10px;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .summary-item:hover {
+            border-color: rgba(0, 180, 255, 0.5);
+            background: rgba(0, 60, 100, 0.5);
+        }
+        .summary-item.active-filter { border-color: #00b4ff; box-shadow: 0 0 15px rgba(0, 180, 255, 0.3); }
+
+        .summary-dot {
+            width: 12px; height: 12px;
+            border-radius: 3px;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        .summary-info { flex: 1; }
+        .summary-label { font-size: 12px; color: rgba(255, 255, 255, 0.6); }
+        .summary-value { font-size: 22px; font-weight: 700; margin-top: 2px; }
+        .summary-percent { font-size: 11px; color: rgba(255, 255, 255, 0.4); margin-top: 1px; }
+
+        /* ========== Main Content ========== */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 370px;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .left-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 0;
+        }
+
+        /* ========== Filter Bar ========== */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            padding: 10px 16px;
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 10px;
+            align-items: center;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 60, 100, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            padding: 6px 12px;
+            min-width: 200px;
+        }
+
+        .search-box input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+            width: 100%;
+        }
+        .search-box input::placeholder { color: rgba(255, 255, 255, 0.3); }
+        .search-icon { color: rgba(255, 255, 255, 0.4); font-size: 14px; }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-select {
+            padding: 6px 10px;
+            background: rgba(0, 60, 100, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            outline: none;
+            min-width: 100px;
+        }
+        .filter-select option { background: #0d2840; color: #fff; }
+        .filter-select:focus { border-color: rgba(0, 180, 255, 0.6); }
+
+        .filter-tags {
+            display: flex;
+            gap: 6px;
+            margin-left: auto;
+        }
+
+        .filter-tag {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            border: 1px solid rgba(0, 180, 255, 0.2);
+            background: rgba(0, 40, 80, 0.4);
+            color: rgba(255, 255, 255, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .filter-tag:hover { border-color: rgba(0, 180, 255, 0.5); color: #fff; }
+        .filter-tag.active { background: rgba(0, 180, 255, 0.2); border-color: #00b4ff; color: #00b4ff; }
+
+        .batch-actions {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+        .batch-actions.show { display: flex; }
+
+        .batch-btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .batch-btn.restart { background: linear-gradient(135deg, #00b4ff, #0088ff); }
+        .batch-btn.restart:hover { box-shadow: 0 0 15px rgba(0, 180, 255, 0.5); }
+        .batch-btn.pause { background: linear-gradient(135deg, #ffaa00, #cc8800); }
+        .batch-btn.pause:hover { box-shadow: 0 0 15px rgba(255, 170, 0, 0.5); }
+        .batch-cancel { color: rgba(255, 255, 255, 0.5); cursor: pointer; font-size: 12px; }
+        .batch-cancel:hover { color: #fff; }
+
+        /* ========== Device Grid ========== */
+        .device-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 10px;
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .device-card {
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 10px;
+            padding: 10px 12px 6px 12px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .device-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 180, 255, 0.2);
+            border-color: rgba(0, 180, 255, 0.5);
+        }
+
+        .device-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 4px; height: 100%;
+            background: var(--status-color, #00ff88);
+        }
+
+        .device-card.selected {
+            border-color: #00b4ff;
+            box-shadow: 0 0 20px rgba(0, 180, 255, 0.3);
+            background: rgba(0, 60, 120, 0.7);
+        }
+
+        .device-card.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 8px; right: 8px;
+            width: 20px; height: 20px;
+            background: #00b4ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .device-card-status-dot {
+            position: absolute;
+            top: 8px; right: 8px;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--status-color, #00ff88);
+            box-shadow: 0 0 6px var(--status-color, #00ff88);
+            animation: pulse2 2s infinite;
+        }
+        .device-card.selected .device-card-status-dot { display: none; }
+
+        @keyframes pulse2 {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .device-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding-right: 24px;
+        }
+
+        .device-icon {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .device-icon.rgv { background: rgba(0, 180, 255, 0.15); border: 1px solid rgba(0, 180, 255, 0.3); color: #00b4ff; }
+        .device-icon.lifter { background: rgba(0, 255, 136, 0.15); border: 1px solid rgba(0, 255, 136, 0.3); color: #00ff88; }
+        .device-icon.conveyor { background: rgba(255, 170, 0, 0.15); border: 1px solid rgba(255, 170, 0, 0.3); color: #ffaa00; }
+
+        .device-info { flex: 1; min-width: 0; }
+        .device-name { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 1px; }
+        .device-type { font-size: 10px; color: rgba(255, 255, 255, 0.4); }
+        .device-ip { font-size: 9px; color: rgba(0, 180, 255, 0.5); margin-top: 1px; font-family: monospace; }
+
+        .device-status-badge {
+            padding: 2px 7px;
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .device-status-badge.running { background: rgba(0, 255, 136, 0.15); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.3); }
+        .device-status-badge.standby { background: rgba(255, 170, 0, 0.15); color: #ffaa00; border: 1px solid rgba(255, 170, 0, 0.3); }
+        .device-status-badge.fault { background: rgba(255, 68, 68, 0.15); color: #ff4444; border: 1px solid rgba(255, 68, 68, 0.3); }
+        .device-status-badge.offline { background: rgba(102, 102, 102, 0.15); color: #666; border: 1px solid rgba(102, 102, 102, 0.3); }
+
+        .device-health {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+            padding: 4px 8px;
+            background: rgba(0, 30, 60, 0.4);
+            border-radius: 5px;
+        }
+
+        .health-bar {
+            flex: 1;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .health-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.6s ease;
+        }
+        .health-bar-fill.good { background: linear-gradient(90deg, #00ff88, #00cc6a); }
+        .health-bar-fill.warn { background: linear-gradient(90deg, #ffaa00, #ff8800); }
+        .health-bar-fill.bad { background: linear-gradient(90deg, #ff4444, #cc0000); }
+
+        .health-text { font-size: 9px; color: rgba(255, 255, 255, 0.5); white-space: nowrap; }
+
+        .device-stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-bottom: 6px;
+        }
+
+        .device-stat-mini {
+            text-align: center;
+            padding: 4px 3px;
+            background: rgba(0, 30, 60, 0.4);
+            border-radius: 5px;
+        }
+
+        .device-stat-mini-label { font-size: 9px; color: rgba(255, 255, 255, 0.4); margin-bottom: 1px; }
+        .device-stat-mini-value { font-size: 11px; font-weight: 600; color: #fff; }
+
+        .device-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .device-btn {
+            flex: 1;
+            padding: 5px 6px;
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 5px;
+            background: rgba(0, 60, 100, 0.6);
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .device-btn:hover { background: rgba(0, 180, 255, 0.2); color: #fff; }
+        .device-btn.primary { background: linear-gradient(135deg, #00b4ff, #0088ff); border-color: transparent; }
+        .device-btn.primary:hover { box-shadow: 0 0 12px rgba(0, 180, 255, 0.4); }
+        .device-btn.warning { background: linear-gradient(135deg, #ffaa00, #cc8800); border-color: transparent; }
+        .device-btn.warning:hover { box-shadow: 0 0 12px rgba(255, 170, 0, 0.4); }
+
+        /* ========== Right Panel ========== */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 0;
+        }
+
+        .panel-card {
+            background: linear-gradient(145deg, rgba(0, 50, 100, 0.75) 0%, rgba(0, 30, 60, 0.85) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.15) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-title { font-size: 14px; font-weight: 600; color: #fff; }
+
+        .panel-content { padding: 12px; }
+
+        .chart-box { height: 170px; }
+
+        .stats-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .stats-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(0, 30, 60, 0.5);
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .stats-item:hover { background: rgba(0, 60, 100, 0.5); }
+
+        .stats-item-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .stats-item-dot {
+            width: 8px; height: 8px;
+            border-radius: 2px;
+        }
+        .stats-item-value {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        /* ========== Modal ========== */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: linear-gradient(145deg, rgba(0, 50, 100, 0.95) 0%, rgba(0, 30, 60, 0.98) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            border-radius: 16px;
+            width: 900px;
+            max-width: 95%;
+            max-height: 90vh;
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.15) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .modal-title { font-size: 16px; font-weight: 600; color: #fff; }
+        .modal-status-badge {
+            padding: 4px 12px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .modal-close {
+            width: 30px; height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #fff;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        .modal-close:hover { background: rgba(255, 68, 68, 0.3); border-color: rgba(255, 68, 68, 0.5); }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .detail-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .detail-grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .detail-item {
+            background: rgba(0, 40, 80, 0.5);
+            border: 1px solid rgba(0, 180, 255, 0.15);
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+
+        .detail-label { font-size: 10px; color: rgba(255, 255, 255, 0.4); margin-bottom: 3px; }
+        .detail-value { font-size: 14px; font-weight: 600; color: #fff; }
+        .detail-value.status-running { color: #00ff88; }
+        .detail-value.status-standby { color: #ffaa00; }
+        .detail-value.status-fault { color: #ff4444; }
+        .detail-value.status-offline { color: #666; }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #00b4ff;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title::before {
+            content: '';
+            width: 3px; height: 14px;
+            background: linear-gradient(180deg, #00b4ff, #0088ff);
+            border-radius: 2px;
+        }
+
+        .modal-charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .modal-chart-box { height: 180px; }
+
+        .maintenance-log {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .maintenance-item {
+            display: flex;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.08);
+        }
+        .maintenance-date { font-size: 11px; color: rgba(255, 255, 255, 0.4); white-space: nowrap; min-width: 80px; }
+        .maintenance-desc { font-size: 12px; color: rgba(255, 255, 255, 0.7); }
+        .maintenance-type {
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .maintenance-type.repair { background: rgba(255, 68, 68, 0.15); color: #ff4444; }
+        .maintenance-type.routine { background: rgba(0, 180, 255, 0.15); color: #00b4ff; }
+        .maintenance-type.inspection { background: rgba(0, 255, 136, 0.15); color: #00ff88; }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(0, 180, 255, 0.15);
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .modal-btn.primary { background: linear-gradient(135deg, #00b4ff, #0088ff); color: #fff; }
+        .modal-btn.primary:hover { box-shadow: 0 0 15px rgba(0, 180, 255, 0.5); }
+        .modal-btn.warning { background: linear-gradient(135deg, #ffaa00, #cc8800); color: #fff; }
+        .modal-btn.warning:hover { box-shadow: 0 0 15px rgba(255, 170, 0, 0.5); }
+        .modal-btn.danger { background: linear-gradient(135deg, #ff4444, #cc0000); color: #fff; }
+        .modal-btn.danger:hover { box-shadow: 0 0 15px rgba(255, 68, 68, 0.5); }
+        .modal-btn.secondary { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .modal-btn.secondary:hover { background: rgba(255, 255, 255, 0.2); }
+
+        /* ========== Comparison Modal ========== */
+        .compare-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .compare-col {
+            background: rgba(0, 40, 80, 0.5);
+            border: 1px solid rgba(0, 180, 255, 0.15);
+            border-radius: 10px;
+            padding: 14px;
+        }
+        .compare-col-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #00b4ff;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.15);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 40, 80, 0.3); }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 180, 255, 0.3); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 180, 255, 0.5); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-bg"></div>
+            <div class="tech-circuit"></div>
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+            <div class="nav-buttons">
+                <a href="wcs-dashboard.html" class="nav-btn">环线总览</a>
+                <a href="wcs-dashboard-enhanced.html" class="nav-btn">总览增强</a>
+                <a href="wcs-tasks.html" class="nav-btn">任务监控</a>
+                <a href="wcs-tasks-enhanced.html" class="nav-btn">任务增强</a>
+                <a href="wcs-devices.html" class="nav-btn">设备管理</a>
+                <a href="wcs-devices-enhanced.html" class="nav-btn active">设备增强</a>
+            </div>
+            <h1>环线WCS物流跟踪系统</h1>
+            <div class="header-subtitle">DEVICE MANAGER - ENHANCED</div>
+        </header>
+
+        <!-- Status Summary -->
+        <div class="status-summary" id="statusSummary">
+            <div class="summary-item" data-status="all" onclick="quickFilter('all')">
+                <div class="summary-dot" style="color:#00b4ff;"></div>
+                <div class="summary-info">
+                    <div class="summary-label">设备总数</div>
+                    <div class="summary-value" style="color:#00b4ff;" id="sumTotal">12</div>
+                </div>
+            </div>
+            <div class="summary-item" data-status="running" onclick="quickFilter('running')">
+                <div class="summary-dot" style="color:#00ff88;"></div>
+                <div class="summary-info">
+                    <div class="summary-label">运行中</div>
+                    <div class="summary-value" style="color:#00ff88;" id="sumRunning">8</div>
+                    <div class="summary-percent" id="sumRunningPct">66.7%</div>
+                </div>
+            </div>
+            <div class="summary-item" data-status="standby" onclick="quickFilter('standby')">
+                <div class="summary-dot" style="color:#ffaa00;"></div>
+                <div class="summary-info">
+                    <div class="summary-label">待机</div>
+                    <div class="summary-value" style="color:#ffaa00;" id="sumStandby">2</div>
+                    <div class="summary-percent" id="sumStandbyPct">16.7%</div>
+                </div>
+            </div>
+            <div class="summary-item" data-status="fault" onclick="quickFilter('fault')">
+                <div class="summary-dot" style="color:#ff4444;"></div>
+                <div class="summary-info">
+                    <div class="summary-label">故障</div>
+                    <div class="summary-value" style="color:#ff4444;" id="sumFault">2</div>
+                    <div class="summary-percent" id="sumFaultPct">16.7%</div>
+                </div>
+            </div>
+            <div class="summary-item" data-status="offline" onclick="quickFilter('offline')">
+                <div class="summary-dot" style="color:#666;"></div>
+                <div class="summary-info">
+                    <div class="summary-label">离线</div>
+                    <div class="summary-value" style="color:#666;" id="sumOffline">0</div>
+                    <div class="summary-percent" id="sumOfflinePct">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="left-section">
+                <!-- Filter Bar -->
+                <div class="filter-bar">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchInput" placeholder="搜索设备名称/IP..." oninput="applyFilters()">
+                    </div>
+                    <div class="filter-group">
+                        <select class="filter-select" id="typeFilter" onchange="applyFilters()">
+                            <option value="">全部类型</option>
+                            <option value="rgv">穿梭车</option>
+                            <option value="lifter">提升机</option>
+                            <option value="conveyor">传送带</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+                            <option value="">全部状态</option>
+                            <option value="running">运行中</option>
+                            <option value="standby">待机</option>
+                            <option value="fault">故障</option>
+                            <option value="offline">离线</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <select class="filter-select" id="sortBy" onchange="applyFilters()">
+                            <option value="name">按名称排序</option>
+                            <option value="status">按状态排序</option>
+                            <option value="runtime">按运行时长排序</option>
+                            <option value="mileage">按里程排序</option>
+                        </select>
+                    </div>
+                    <div class="filter-tags">
+                        <span class="filter-tag" data-status="fault" onclick="quickTagFilter('fault')">⚠ 故障设备</span>
+                        <span class="filter-tag" data-status="standby" onclick="quickTagFilter('standby')">⏸ 待机设备</span>
+                    </div>
+                    <div class="batch-actions" id="batchActions">
+                        <span style="font-size:12px;color:rgba(255,255,255,0.6);" id="batchCount">已选 0 台</span>
+                        <button class="batch-btn restart" onclick="batchRestart()">批量重启</button>
+                        <button class="batch-btn pause" onclick="batchPause()">批量暂停</button>
+                        <span class="batch-cancel" onclick="clearSelection()">取消选择</span>
+                    </div>
+                </div>
+
+                <!-- Device Grid -->
+                <div class="device-grid" id="deviceGrid"></div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="right-panel">
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <span class="panel-title">设备类型分布</span>
+                    </div>
+                    <div class="panel-content">
+                        <div class="chart-box" id="typeChart"></div>
+                    </div>
+                </div>
+
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <span class="panel-title">设备健康度 TOP5</span>
+                    </div>
+                    <div class="panel-content">
+                        <div class="stats-list" id="healthList"></div>
+                    </div>
+                </div>
+
+                <div class="panel-card" style="flex:1;">
+                    <div class="panel-header">
+                        <span class="panel-title">今日设备趋势</span>
+                    </div>
+                    <div class="panel-content" style="height:calc(100% - 50px);">
+                        <div class="chart-box" id="trendChart" style="height:100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Device Detail Modal -->
+    <div class="modal-overlay" id="deviceModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="modal-title" id="modalTitle">设备详情</span>
+                    <span class="modal-status-badge" id="modalStatusBadge">运行中</span>
+                </div>
+                <div class="modal-close" onclick="closeModal()">&times;</div>
+            </div>
+            <div class="modal-body">
+                <!-- 运输详情 -->
+                <div>
+                    <div class="section-title">运输详情</div>
+                    <div class="detail-grid-3" style="margin-top:10px;">
+                        <div class="detail-item">
+                            <div class="detail-label">设备名称</div>
+                            <div class="detail-value" id="modalDeviceName">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">当前状态</div>
+                            <div class="detail-value" id="modalDeviceStatus">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">当前位置</div>
+                            <div class="detail-value" id="modalDevicePosition">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">当前运送物资</div>
+                            <div class="detail-value" id="modalCargo">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">数量</div>
+                            <div class="detail-value" id="modalQuantity">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">关联MES订单</div>
+                            <div class="detail-value" id="modalMesOrder">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">发起时间</div>
+                            <div class="detail-value" id="modalStartTime">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">已运送时间</div>
+                            <div class="detail-value" id="modalElapsedTime">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">预计到达时间</div>
+                            <div class="detail-value" id="modalEta">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">目的地</div>
+                            <div class="detail-value" id="modalDestination">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">操作人</div>
+                            <div class="detail-value" id="modalOperator">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">最后通讯</div>
+                            <div class="detail-value" id="modalDeviceLastComm">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="modal-charts-row">
+                    <div style="background:rgba(0,40,80,0.3);border-radius:8px;padding:10px;">
+                        <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:6px;">24小时运行效率</div>
+                        <div class="modal-chart-box" id="deviceEfficiencyChart"></div>
+                    </div>
+                    <div style="background:rgba(0,40,80,0.3);border-radius:8px;padding:10px;">
+                        <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:6px;">最近任务记录</div>
+                        <div class="modal-chart-box" id="deviceTaskChart"></div>
+                    </div>
+                </div>
+
+                <!-- 维保记录 -->
+                <div>
+                    <div class="section-title">维保记录</div>
+                    <div class="maintenance-log" id="maintenanceLog" style="margin-top:8px;"></div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="modal-btn primary" onclick="restartDevice()">重启设备</button>
+                    <button class="modal-btn warning" onclick="pauseDevice()">暂停运行</button>
+                    <button class="modal-btn danger" onclick="emergencyStop()">紧急停止</button>
+                    <button class="modal-btn secondary" onclick="closeModal()">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compare Modal -->
+    <div class="modal-overlay" id="compareModal">
+        <div class="modal" style="width:750px;">
+            <div class="modal-header">
+                <span class="modal-title">设备对比</span>
+                <div class="modal-close" onclick="closeCompareModal()">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div class="compare-grid" id="compareContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== Data ====================
+        const devicesData = [
+            { id: 'RGV-01', name: '穿梭车-01', type: 'rgv', typeName: '穿梭车', status: 'running', position: '钣喷车间', mileage: 12456, runtime: 2456, lastComm: '2026-04-28 14:32:15', ip: '192.168.1.101', health: 92 },
+            { id: 'RGV-02', name: '穿梭车-02', type: 'rgv', typeName: '穿梭车', status: 'running', position: '注塑车间', mileage: 9876, runtime: 1876, lastComm: '2026-04-28 14:31:42', ip: '192.168.1.102', health: 88 },
+            { id: 'RGV-03', name: '穿梭车-03', type: 'rgv', typeName: '穿梭车', status: 'standby', position: '成品仓库', mileage: 15234, runtime: 3234, lastComm: '2026-04-28 14:30:18', ip: '192.168.1.103', health: 75 },
+            { id: 'RGV-04', name: '穿梭车-04', type: 'rgv', typeName: '穿梭车', status: 'running', position: '总装外4线', mileage: 8765, runtime: 1765, lastComm: '2026-04-28 14:32:01', ip: '192.168.1.104', health: 95 },
+            { id: 'RGV-05', name: '穿梭车-05', type: 'rgv', typeName: '穿梭车', status: 'fault', position: '总装外5线', mileage: 23456, runtime: 4456, lastComm: '2026-04-28 14:25:33', ip: '192.168.1.105', health: 35 },
+            { id: 'RGV-06', name: '穿梭车-06', type: 'rgv', typeName: '穿梭车', status: 'running', position: '两器车间', mileage: 11234, runtime: 2234, lastComm: '2026-04-28 14:31:55', ip: '192.168.1.106', health: 90 },
+            { id: 'RGV-07', name: 'RGV-01', type: 'rgv', typeName: '穿梭车', status: 'running', position: '控制器车间', mileage: 7654, runtime: 1654, lastComm: '2026-04-28 14:32:08', ip: '192.168.1.107', health: 97 },
+            { id: 'RGV-08', name: 'RGV-02', type: 'rgv', typeName: '穿梭车', status: 'standby', position: '物资库1', mileage: 18987, runtime: 3987, lastComm: '2026-04-28 14:28:22', ip: '192.168.1.108', health: 68 },
+            { id: 'LIFT-01', name: '提升机-01', type: 'lifter', typeName: '提升机', status: 'running', position: '入库提升', mileage: 5678, runtime: 1678, lastComm: '2026-04-28 14:32:10', ip: '192.168.1.201', health: 94 },
+            { id: 'LIFT-02', name: '提升机-02', type: 'lifter', typeName: '提升机', status: 'running', position: '出库提升', mileage: 6234, runtime: 1834, lastComm: '2026-04-28 14:31:58', ip: '192.168.1.202', health: 86 },
+            { id: 'CONV-01', name: 'RGV-03', type: 'conveyor', typeName: '传送带', status: 'running', position: '入库线', mileage: 0, runtime: 2100, lastComm: '2026-04-28 14:32:12', ip: '192.168.1.301', health: 82 },
+            { id: 'CONV-02', name: 'RGV-04', type: 'conveyor', typeName: '传送带', status: 'fault', position: '分拣线', mileage: 0, runtime: 1900, lastComm: '2026-04-28 14:20:45', ip: '192.168.1.302', health: 28 },
+        ];
+
+        let filteredDevices = [...devicesData];
+        let selectedDevice = null;
+        let selectedDevices = new Set();
+        let currentStatusFilter = '';
+        let deviceChart1 = null, deviceChart2 = null, typeChart = null, trendChart = null;
+
+        const statusColorMap = {
+            running: '#00ff88', standby: '#ffaa00', fault: '#ff4444', offline: '#666666'
+        };
+        const statusTextMap = {
+            running: '运行中', standby: '待机', fault: '故障', offline: '离线'
+        };
+
+        function getDeviceIcon(type) {
+            const icons = {
+                rgv: '🚂',
+                lifter: '🔼',
+                conveyor: '🔄'
+            };
+            return icons[type] || '📦';
+        }
+
+        function getTransportData(device) {
+            const cargos = ['压缩机-转子组件', '冷凝器-铜管翅片', '蒸发器-铝箔翅片', '电子膨胀阀-控制器', '注塑件外壳'];
+            const destinations = ['总装外5线-装配岗03', '成品仓库-入库岗02', '总装外4线-装配岗01', '两器车间-焊接岗05', '控制器车间-组装岗02'];
+            const operators = ['张三 (W2024001)', '李四 (W2024002)', '王五 (W2024003)', '赵六 (W2024004)', '钱七 (W2024005)'];
+            const seed = device.id.charCodeAt(device.id.length - 1);
+            const idx = seed % 5;
+            return {
+                cargo: cargos[idx],
+                quantity: (seed % 50 + 10) + ' 件',
+                mesOrder: 'MES-' + (202604000 + seed),
+                startTime: '2026-04-28 ' + (8 + idx).toString().padStart(2, '0') + ':' + (seed % 60).toString().padStart(2, '0') + ':00',
+                elapsedTime: (idx * 8 + 5) + ' 分钟',
+                eta: '2026-04-28 ' + (15 + idx).toString().padStart(2, '0') + ':' + (seed % 60).toString().padStart(2, '0'),
+                destination: destinations[idx],
+                operator: operators[idx]
+            };
+        }
+
+        function getMaintenanceHistory(device) {
+            const histories = [
+                { date: '2026-04-25', type: 'routine', desc: '定期保养 - 更换导轨润滑油' },
+                { date: '2026-04-18', type: 'inspection', desc: '季度安全检查 - 所有传感器正常' },
+                { date: '2026-04-10', type: 'repair', desc: '更换驱动电机轴承' },
+                { date: '2026-03-28', type: 'routine', desc: '定期保养 - 清洁光电传感器' },
+                { date: '2026-03-15', type: 'inspection', desc: '月度电气检查 - 线路绝缘正常' },
+            ];
+            if (device.status === 'fault') {
+                histories.unshift({ date: '2026-04-28', type: 'repair', desc: '设备故障 - 待维修' });
+            }
+            return histories;
+        }
+
+        // ==================== Render Device Grid ====================
+        function renderDeviceGrid() {
+            const grid = document.getElementById('deviceGrid');
+            grid.innerHTML = filteredDevices.map(device => {
+                const statusColor = statusColorMap[device.status];
+                const healthClass = device.health >= 80 ? 'good' : (device.health >= 50 ? 'warn' : 'bad');
+                const isSelected = selectedDevices.has(device.id);
+
+                return `
+                    <div class="device-card ${isSelected ? 'selected' : ''}"
+                         style="--status-color: ${statusColor};"
+                         onclick="${isSelected ? `toggleDeviceSelect('${device.id}')` : `showDeviceModal('${device.id}')`}"
+                         oncontextmenu="event.preventDefault(); toggleDeviceSelect('${device.id}')">
+                        <div class="device-card-status-dot" style="--status-color: ${statusColor};"></div>
+                        <div class="device-header">
+                            <div class="device-icon ${device.type}">${getDeviceIcon(device.type)}</div>
+                            <div class="device-info">
+                                <div class="device-name">${device.name}</div>
+                                <div class="device-type">${device.typeName}</div>
+                                <div class="device-ip">${device.ip}</div>
+                            </div>
+                            <span class="device-status-badge ${device.status}">${statusTextMap[device.status]}</span>
+                        </div>
+                        <div class="device-health">
+                            <span style="font-size:10px;color:rgba(255,255,255,0.4);">健康度</span>
+                            <div class="health-bar">
+                                <div class="health-bar-fill ${healthClass}" style="width:${device.health}%;"></div>
+                            </div>
+                            <span class="health-text" style="color:${device.health >= 80 ? '#00ff88' : (device.health >= 50 ? '#ffaa00' : '#ff4444')};">${device.health}%</span>
+                        </div>
+                        <div class="device-stats-row">
+                            <div class="device-stat-mini">
+                                <div class="device-stat-mini-label">里程</div>
+                                <div class="device-stat-mini-value">${device.mileage > 0 ? (device.mileage / 1000).toFixed(1) + 'k km' : '-'}</div>
+                            </div>
+                            <div class="device-stat-mini">
+                                <div class="device-stat-mini-label">运行时长</div>
+                                <div class="device-stat-mini-value">${device.runtime.toLocaleString()}h</div>
+                            </div>
+                            <div class="device-stat-mini">
+                                <div class="device-stat-mini-label">位置</div>
+                                <div class="device-stat-mini-value" style="font-size:11px;">${device.position}</div>
+                            </div>
+                        </div>
+                        <div class="device-actions" onclick="event.stopPropagation()">
+                            <button class="device-btn" onclick="showDeviceModal('${device.id}')">详情</button>
+                            <button class="device-btn primary" onclick="restartDeviceById('${device.id}')">重启</button>
+                            <button class="device-btn warning" onclick="pauseDeviceById('${device.id}')">暂停</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (filteredDevices.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column:1/-1;text-align:center;padding:60px;color:rgba(255,255,255,0.4);">
+                        <div style="font-size:48px;margin-bottom:16px;">📭</div>
+                        <div style="font-size:16px;">没有找到匹配的设备</div>
+                        <div style="font-size:12px;margin-top:8px;">请调整筛选条件或搜索关键词</div>
+                    </div>
+                `;
+            }
+
+            updateBatchUI();
+        }
+
+        // ==================== Selection ====================
+        function toggleDeviceSelect(deviceId) {
+            if (selectedDevices.has(deviceId)) {
+                selectedDevices.delete(deviceId);
+            } else {
+                selectedDevices.add(deviceId);
+            }
+            renderDeviceGrid();
+        }
+
+        function clearSelection() {
+            selectedDevices.clear();
+            renderDeviceGrid();
+        }
+
+        function updateBatchUI() {
+            const batchActions = document.getElementById('batchActions');
+            const batchCount = document.getElementById('batchCount');
+            if (selectedDevices.size > 0) {
+                batchActions.classList.add('show');
+                batchCount.textContent = `已选 ${selectedDevices.size} 台`;
+            } else {
+                batchActions.classList.remove('show');
+            }
+        }
+
+        function batchRestart() {
+            const count = selectedDevices.size;
+            selectedDevices.forEach(id => {
+                const device = devicesData.find(d => d.id === id);
+                if (device) { device.status = 'running'; device.health = Math.min(100, device.health + 5); }
+            });
+            alert(`已向 ${count} 台设备发送重启指令`);
+            clearSelection();
+            applyFilters();
+        }
+
+        function batchPause() {
+            const count = selectedDevices.size;
+            selectedDevices.forEach(id => {
+                const device = devicesData.find(d => d.id === id);
+                if (device) { device.status = 'standby'; }
+            });
+            alert(`已暂停 ${count} 台设备`);
+            clearSelection();
+            applyFilters();
+        }
+
+        // ==================== Filters ====================
+        function applyFilters() {
+            const typeFilter = document.getElementById('typeFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const sortBy = document.getElementById('sortBy').value;
+
+            filteredDevices = devicesData.filter(device => {
+                const typeMatch = !typeFilter || device.type === typeFilter;
+                const statusMatch = !statusFilter || device.status === statusFilter;
+                const searchMatch = !searchText ||
+                    device.name.toLowerCase().includes(searchText) ||
+                    device.ip.includes(searchText) ||
+                    device.typeName.includes(searchText) ||
+                    device.position.includes(searchText);
+                return typeMatch && statusMatch && searchMatch;
+            });
+
+            // Sort
+            const sortFns = {
+                name: (a, b) => a.name.localeCompare(b.name),
+                status: (a, b) => {
+                    const order = { fault: 0, standby: 1, running: 2, offline: 3 };
+                    return order[a.status] - order[b.status];
+                },
+                runtime: (a, b) => b.runtime - a.runtime,
+                mileage: (a, b) => b.mileage - a.mileage,
+            };
+            filteredDevices.sort(sortFns[sortBy] || sortFns.name);
+
+            // Sync quick status filter
+            currentStatusFilter = statusFilter;
+            updateSummaryHighlight();
+
+            renderDeviceGrid();
+            updateSummary();
+        }
+
+        function quickFilter(status) {
+            document.getElementById('statusFilter').value = status === 'all' ? '' : status;
+            document.getElementById('typeFilter').value = '';
+            document.getElementById('searchInput').value = '';
+            currentStatusFilter = status === 'all' ? '' : status;
+            updateSummaryHighlight();
+            applyFilters();
+        }
+
+        function quickTagFilter(status) {
+            document.getElementById('statusFilter').value = status;
+            document.getElementById('typeFilter').value = '';
+            currentStatusFilter = status;
+            updateSummaryHighlight();
+            applyFilters();
+        }
+
+        function updateSummaryHighlight() {
+            document.querySelectorAll('.summary-item').forEach(item => {
+                const itemStatus = item.dataset.status;
+                if (itemStatus === 'all' && !currentStatusFilter) {
+                    item.classList.add('active-filter');
+                } else if (itemStatus === currentStatusFilter) {
+                    item.classList.add('active-filter');
+                } else {
+                    item.classList.remove('active-filter');
+                }
+            });
+
+            document.querySelectorAll('.filter-tag').forEach(tag => {
+                tag.classList.toggle('active', tag.dataset.status === currentStatusFilter);
+            });
+        }
+
+        function updateSummary() {
+            const total = devicesData.length;
+            const counts = {};
+            ['running', 'standby', 'fault', 'offline'].forEach(s => {
+                counts[s] = devicesData.filter(d => d.status === s).length;
+            });
+
+            document.getElementById('sumTotal').textContent = total;
+            document.getElementById('sumRunning').textContent = counts.running;
+            document.getElementById('sumStandby').textContent = counts.standby;
+            document.getElementById('sumFault').textContent = counts.fault;
+            document.getElementById('sumOffline').textContent = counts.offline;
+            document.getElementById('sumRunningPct').textContent = (counts.running / total * 100).toFixed(1) + '%';
+            document.getElementById('sumStandbyPct').textContent = (counts.standby / total * 100).toFixed(1) + '%';
+            document.getElementById('sumFaultPct').textContent = (counts.fault / total * 100).toFixed(1) + '%';
+            document.getElementById('sumOfflinePct').textContent = (counts.offline / total * 100).toFixed(1) + '%';
+
+            renderHealthList();
+        }
+
+        // ==================== Health List ====================
+        function renderHealthList() {
+            const container = document.getElementById('healthList');
+            const sorted = [...devicesData].sort((a, b) => a.health - b.health).slice(0, 5);
+
+            container.innerHTML = sorted.map(d => {
+                const color = d.health >= 80 ? '#00ff88' : (d.health >= 50 ? '#ffaa00' : '#ff4444');
+                return `
+                    <div class="stats-item" onclick="showDeviceModal('${d.id}')" style="cursor:pointer;">
+                        <div class="stats-item-left">
+                            <div class="stats-item-dot" style="background:${color};box-shadow:0 0 6px ${color};"></div>
+                            <span>${d.name}</span>
+                        </div>
+                        <span class="stats-item-value" style="color:${color};font-size:14px;">${d.health}%</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ==================== Device Modal ====================
+        function showDeviceModal(deviceId) {
+            if (selectedDevices.size > 0) {
+                toggleDeviceSelect(deviceId);
+                return;
+            }
+            selectedDevice = devicesData.find(d => d.id === deviceId);
+            if (!selectedDevice) return;
+
+            const transportData = getTransportData(selectedDevice);
+            const statusColor = statusColorMap[selectedDevice.status];
+
+            document.getElementById('modalTitle').textContent = selectedDevice.name;
+            document.getElementById('modalStatusBadge').textContent = statusTextMap[selectedDevice.status];
+            document.getElementById('modalStatusBadge').style.cssText = `
+                background: ${statusColor}22; color: ${statusColor}; border: 1px solid ${statusColor}44;
+            `;
+            document.getElementById('modalDeviceName').textContent = selectedDevice.name;
+            document.getElementById('modalDeviceStatus').textContent = statusTextMap[selectedDevice.status];
+            document.getElementById('modalDeviceStatus').className = 'detail-value status-' + selectedDevice.status;
+            document.getElementById('modalDevicePosition').textContent = selectedDevice.position;
+            document.getElementById('modalDeviceLastComm').textContent = selectedDevice.lastComm;
+            document.getElementById('modalCargo').textContent = transportData.cargo;
+            document.getElementById('modalQuantity').textContent = transportData.quantity;
+            document.getElementById('modalMesOrder').textContent = transportData.mesOrder;
+            document.getElementById('modalStartTime').textContent = transportData.startTime;
+            document.getElementById('modalElapsedTime').textContent = transportData.elapsedTime;
+            document.getElementById('modalEta').textContent = transportData.eta;
+            document.getElementById('modalDestination').textContent = transportData.destination;
+            document.getElementById('modalOperator').textContent = transportData.operator;
+
+            // Maintenance log
+            const histories = getMaintenanceHistory(selectedDevice);
+            document.getElementById('maintenanceLog').innerHTML = histories.map(h => `
+                <div class="maintenance-item">
+                    <span class="maintenance-date">${h.date}</span>
+                    <span class="maintenance-type ${h.type}">${h.type === 'repair' ? '维修' : (h.type === 'routine' ? '保养' : '检查')}</span>
+                    <span class="maintenance-desc">${h.desc}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('deviceModal').classList.add('active');
+
+            setTimeout(() => {
+                initDeviceCharts();
+            }, 150);
+        }
+
+        function initDeviceCharts() {
+            // Efficiency chart
+            if (deviceChart1) deviceChart1.dispose();
+            deviceChart1 = echarts.init(document.getElementById('deviceEfficiencyChart'));
+            const hours = Array.from({ length: 24 }, (_, i) => i + ':00');
+            const data = Array.from({ length: 24 }, () => Math.floor(Math.random() * 40) + 50);
+            deviceChart1.setOption({
+                grid: { left: 35, right: 10, top: 5, bottom: 20 },
+                xAxis: { type: 'category', data: hours,
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.15)' } },
+                    axisLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 8, interval: 4 } },
+                yAxis: { type: 'value', min: 30, max: 100,
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
+                    axisLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 9 } },
+                series: [{
+                    type: 'line', data: data, smooth: true, symbol: 'none',
+                    lineStyle: { color: '#00b4ff', width: 2 },
+                    areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                        colorStops: [{ offset: 0, color: 'rgba(0,180,255,0.25)' }, { offset: 1, color: 'rgba(0,180,255,0.02)' }] } },
+                }],
+            });
+
+            // Task chart
+            if (deviceChart2) deviceChart2.dispose();
+            deviceChart2 = echarts.init(document.getElementById('deviceTaskChart'));
+            const taskLabels = ['任务A', '任务B', '任务C', '任务D', '任务E'];
+            const taskData = Array.from({ length: 5 }, () => Math.floor(Math.random() * 30) + 10);
+            deviceChart2.setOption({
+                grid: { left: 35, right: 10, top: 5, bottom: 20 },
+                xAxis: { type: 'category', data: taskLabels,
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.15)' } },
+                    axisLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 9 } },
+                yAxis: { type: 'value',
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
+                    axisLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 9 } },
+                series: [{
+                    type: 'bar', data: taskData, barWidth: 14,
+                    itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                        colorStops: [{ offset: 0, color: '#00ff88' }, { offset: 1, color: 'rgba(0,255,136,0.2)' }] },
+                        borderRadius: [3, 3, 0, 0] },
+                }],
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('deviceModal').classList.remove('active');
+            if (deviceChart1) { deviceChart1.dispose(); deviceChart1 = null; }
+            if (deviceChart2) { deviceChart2.dispose(); deviceChart2 = null; }
+        }
+
+        // ==================== Compare Modal ====================
+        function showCompareModal() {
+            if (selectedDevices.size < 2) {
+                alert('请先选择至少2台设备进行对比（右键点击设备卡片）');
+                return;
+            }
+            const ids = [...selectedDevices].slice(0, 2);
+            const devs = ids.map(id => devicesData.find(d => d.id === id));
+
+            document.getElementById('compareContent').innerHTML = devs.map(d => {
+                const sc = statusColorMap[d.status];
+                return `
+                    <div class="compare-col">
+                        <div class="compare-col-title">${d.name}</div>
+                        <div class="detail-grid-2">
+                            <div class="detail-item"><div class="detail-label">状态</div><div class="detail-value" style="color:${sc};">${statusTextMap[d.status]}</div></div>
+                            <div class="detail-item"><div class="detail-label">健康度</div><div class="detail-value" style="color:${d.health >= 80 ? '#00ff88' : (d.health >= 50 ? '#ffaa00' : '#ff4444')};">${d.health}%</div></div>
+                            <div class="detail-item"><div class="detail-label">类型</div><div class="detail-value">${d.typeName}</div></div>
+                            <div class="detail-item"><div class="detail-label">位置</div><div class="detail-value">${d.position}</div></div>
+                            <div class="detail-item"><div class="detail-label">累计里程</div><div class="detail-value">${d.mileage.toLocaleString()} km</div></div>
+                            <div class="detail-item"><div class="detail-label">运行时长</div><div class="detail-value">${d.runtime.toLocaleString()} h</div></div>
+                            <div class="detail-item"><div class="detail-label">IP地址</div><div class="detail-value" style="font-family:monospace;font-size:12px;">${d.ip}</div></div>
+                            <div class="detail-item"><div class="detail-label">最后通讯</div><div class="detail-value" style="font-size:11px;">${d.lastComm}</div></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('compareModal').classList.add('active');
+        }
+
+        function closeCompareModal() {
+            document.getElementById('compareModal').classList.remove('active');
+        }
+
+        // ==================== Device Actions ====================
+        function restartDevice() {
+            if (selectedDevice) {
+                alert(`正在重启 ${selectedDevice.name}...`);
+                selectedDevice.status = 'running';
+                selectedDevice.health = Math.min(100, selectedDevice.health + 5);
+                selectedDevice.lastComm = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                applyFilters();
+                closeModal();
+            }
+        }
+
+        function restartDeviceById(deviceId) {
+            const device = devicesData.find(d => d.id === deviceId);
+            if (device) {
+                alert(`正在重启 ${device.name}...`);
+                device.status = 'running';
+                device.health = Math.min(100, device.health + 5);
+                device.lastComm = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                applyFilters();
+            }
+        }
+
+        function pauseDevice() {
+            if (selectedDevice) {
+                alert(`已暂停 ${selectedDevice.name}`);
+                selectedDevice.status = 'standby';
+                applyFilters();
+                closeModal();
+            }
+        }
+
+        function pauseDeviceById(deviceId) {
+            const device = devicesData.find(d => d.id === deviceId);
+            if (device) {
+                alert(`已暂停 ${device.name}`);
+                device.status = 'standby';
+                applyFilters();
+            }
+        }
+
+        function emergencyStop() {
+            if (selectedDevice) {
+                if (confirm(`⚠ 确认紧急停止 ${selectedDevice.name}？此操作将立即中断所有运行。`)) {
+                    selectedDevice.status = 'fault';
+                    selectedDevice.health = Math.max(0, selectedDevice.health - 20);
+                    alert(`${selectedDevice.name} 已紧急停止！`);
+                    applyFilters();
+                    closeModal();
+                }
+            }
+        }
+
+        // ==================== Right Panel Charts ====================
+        function initTypeChart() {
+            const dom = document.getElementById('typeChart');
+            if (!dom || typeChart) return;
+            typeChart = echarts.init(dom);
+
+            const typeCount = {
+                '穿梭车': devicesData.filter(d => d.type === 'rgv').length,
+                '提升机': devicesData.filter(d => d.type === 'lifter').length,
+                '传送带': devicesData.filter(d => d.type === 'conveyor').length
+            };
+
+            typeChart.setOption({
+                tooltip: { trigger: 'item', backgroundColor: 'rgba(0,40,80,0.9)', borderColor: 'rgba(0,180,255,0.3)',
+                    textStyle: { color: '#fff', fontSize: 12 } },
+                series: [{
+                    type: 'pie', radius: ['45%', '75%'], center: ['50%', '50%'],
+                    itemStyle: { borderRadius: 6, borderColor: 'rgba(0,40,80,0.9)', borderWidth: 3 },
+                    label: { show: true, color: 'rgba(255,255,255,0.8)', fontSize: 11,
+                        formatter: '{b}\n{d}%' },
+                    data: [
+                        { value: typeCount['穿梭车'], name: '穿梭车', itemStyle: { color: '#00b4ff' } },
+                        { value: typeCount['提升机'], name: '提升机', itemStyle: { color: '#00ff88' } },
+                        { value: typeCount['传送带'], name: '传送带', itemStyle: { color: '#ffaa00' } }
+                    ]
+                }]
+            });
+        }
+
+        function initTrendChart() {
+            const dom = document.getElementById('trendChart');
+            if (!dom || trendChart) return;
+            trendChart = echarts.init(dom);
+
+            const hours = Array.from({ length: 12 }, (_, i) => i * 2 + ':00');
+            const runningData = [8, 9, 10, 11, 10, 9, 8, 7, 8, 9, 10, 11];
+            const faultData = [1, 0, 1, 0, 1, 2, 1, 1, 0, 1, 0, 1];
+            const standbyData = [3, 2, 1, 0, 1, 0, 2, 3, 3, 1, 1, 0];
+
+            trendChart.setOption({
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,40,80,0.9)', borderColor: 'rgba(0,180,255,0.3)',
+                    textStyle: { color: '#fff', fontSize: 11 } },
+                legend: { data: ['运行中', '待机', '故障'], textStyle: { color: 'rgba(255,255,255,0.7)', fontSize: 10 },
+                    top: 0, itemWidth: 10, itemHeight: 6 },
+                grid: { left: 35, right: 10, top: 30, bottom: 20 },
+                xAxis: { type: 'category', data: hours,
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.15)' } },
+                    axisLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 9 } },
+                yAxis: { type: 'value',
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
+                    axisLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 9 } },
+                series: [
+                    { name: '运行中', type: 'line', data: runningData, smooth: true, symbol: 'none',
+                        lineStyle: { color: '#00ff88', width: 2 },
+                        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [{ offset: 0, color: 'rgba(0,255,136,0.2)' }, { offset: 1, color: 'rgba(0,255,136,0)' }] } } },
+                    { name: '待机', type: 'line', data: standbyData, smooth: true, symbol: 'none',
+                        lineStyle: { color: '#ffaa00', width: 2 },
+                        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [{ offset: 0, color: 'rgba(255,170,0,0.2)' }, { offset: 1, color: 'rgba(255,170,0,0)' }] } } },
+                    { name: '故障', type: 'line', data: faultData, smooth: true, symbol: 'none',
+                        lineStyle: { color: '#ff4444', width: 2 } },
+                ]
+            });
+        }
+
+        // ==================== Simulate ====================
+        function simulateDeviceChanges() {
+            if (Math.random() > 0.7) {
+                const device = devicesData[Math.floor(Math.random() * devicesData.length)];
+                const statuses = ['running', 'standby', 'fault'];
+                device.status = statuses[Math.floor(Math.random() * statuses.length)];
+                device.lastComm = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                device.health = Math.max(20, Math.min(100, device.health + (Math.random() - 0.5) * 10));
+                applyFilters();
+                updateSummary();
+            }
+        }
+
+        // ==================== Keyboard Shortcuts ====================
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                closeCompareModal();
+                clearSelection();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a' && document.activeElement !== document.getElementById('searchInput')) {
+                e.preventDefault();
+                filteredDevices.forEach(d => selectedDevices.add(d.id));
+                renderDeviceGrid();
+            }
+        });
+
+        // ==================== Initialize ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            applyFilters();
+            updateSummary();
+            initTypeChart();
+            initTrendChart();
+
+            setInterval(simulateDeviceChanges, 12000);
+        });
+
+        document.getElementById('deviceModal').addEventListener('click', (e) => {
+            if (e.target.id === 'deviceModal') closeModal();
+        });
+        document.getElementById('compareModal').addEventListener('click', (e) => {
+            if (e.target.id === 'compareModal') closeCompareModal();
+        });
+
+        window.addEventListener('resize', () => {
+            [deviceChart1, deviceChart2, typeChart, trendChart].forEach(c => { if (c) c.resize(); });
+        });
+    </script>
+</body>
+</html>

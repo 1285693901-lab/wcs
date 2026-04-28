@@ -368,7 +368,7 @@
         .legend-dot.standby { background: #ffaa00; box-shadow: 0 0 8px #ffaa00; }
         .legend-dot.fault { background: #ff4444; box-shadow: 0 0 8px #ff4444; }
 
-        /* RGV 跟随卡片 */
+        /* RGV 详情卡片（固定在轨道中间） */
         .rgv-card {
             display: none;
             position: absolute;
@@ -379,7 +379,7 @@
             width: 320px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 180, 255, 0.3);
             animation: cardFadeIn 0.2s ease;
-            pointer-events: none;
+            pointer-events: auto;
         }
 
         .rgv-card.show {
@@ -440,15 +440,7 @@
         }
 
         .rgv-card-arrow {
-            position: absolute;
-            width: 0;
-            height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-top: 8px solid rgba(0, 180, 255, 0.5);
-            bottom: -8px;
-            left: 50%;
-            transform: translateX(-50%);
+            display: none;
         }
 
         .rgv-info-row {
@@ -805,8 +797,11 @@
 
             <div class="nav-buttons">
                 <a href="wcs-dashboard.html" class="nav-btn active">环线总览</a>
+                <a href="wcs-dashboard-enhanced.html" class="nav-btn">总览增强</a>
                 <a href="wcs-tasks.html" class="nav-btn">任务监控</a>
+                <a href="wcs-tasks-enhanced.html" class="nav-btn">任务增强</a>
                 <a href="wcs-devices.html" class="nav-btn">设备管理</a>
+                <a href="wcs-devices-enhanced.html" class="nav-btn">设备增强</a>
             </div>
             <h1>环线WCS物流跟踪系统</h1>
             <div class="header-subtitle">LOOP WCS LOGISTICS TRACKING</div>
@@ -918,6 +913,10 @@
                             <div class="rgv-info-row">
                                 <span class="rgv-info-label">数量：</span>
                                 <span class="rgv-info-value" id="rgvQuantity">-</span>
+                            </div>
+                            <div class="rgv-info-row">
+                                <span class="rgv-info-label">关联MES订单：</span>
+                                <span class="rgv-info-value" id="rgvMesOrder">-</span>
                             </div>
                             <div class="rgv-info-row">
                                 <span class="rgv-info-label">发起时间：</span>
@@ -2215,10 +2214,10 @@
                         symbol: 'path://M4,2 L6,2 L6,4 L10,4 L10,8 L8,8 L8,10 L2,10 L2,8 L0,8 L0,4 L4,4 Z',
                         symbolSize: [28, 20],
                         data: [
-                            { value: [250, 25], name: 'RGV-01', symbolRotate: 90, status: 'running' },
-                            { value: [700, 150], name: 'RGV-02', symbolRotate: 180, status: 'standby' },
-                            { value: [400, 275], name: 'RGV-03', symbolRotate: 270, status: 'running' },
-                            { value: [100, 100], name: 'RGV-04', symbolRotate: 0, status: 'fault' }
+                            { value: [250, 25], name: '穿梭车-01', id: 'RGV-01', symbolRotate: 90, status: 'running' },
+                            { value: [700, 150], name: '穿梭车-02', id: 'RGV-02', symbolRotate: 180, status: 'standby' },
+                            { value: [400, 275], name: '穿梭车-03', id: 'RGV-03', symbolRotate: 270, status: 'running' },
+                            { value: [100, 100], name: '穿梭车-04', id: 'RGV-04', symbolRotate: 0, status: 'fault' }
                         ],
                         itemStyle: {
                             color: function(params) {
@@ -2322,7 +2321,7 @@
             const vehicleSeriesIndex = option.series.length - 1;
             rgvChart.on('click', function(params) {
                 if (params.seriesIndex === vehicleSeriesIndex) {
-                    openRgvCard(params.data.name, params.data.value);
+                    openRgvCard(params.data.id, params.data.name, params.data.value);
                 }
             });
 
@@ -2344,36 +2343,44 @@
         };
 
         // 每1秒移动的角度增量（不同小车不同速度）
-        const ANGLE_INCREMENT_RGV01 = 6;     // RGV-01 速度：每次6度
-        const ANGLE_INCREMENT_RGV02 = 2;     // RGV-02 速度：每次2度
-        const ANGLE_INCREMENT_RGV03 = 3;     // RGV-03 速度：每次3度
-        const ANGLE_INCREMENT_RGV04 = 4;     // RGV-04 速度：每次4度
+        const ANGLE_INCREMENT_RGV01 = 0.75;  // RGV-01 速度：每次0.75度
+        const ANGLE_INCREMENT_RGV02 = 0.5;   // RGV-02 速度：每次0.5度
+        const ANGLE_INCREMENT_RGV03 = 0.7;   // RGV-03 速度：每次0.7度
+        const ANGLE_INCREMENT_RGV04 = 0.6;   // RGV-04 速度：每次0.6度
         
         // 生成RGV小车数据（沿轨道逆时针匀速移动，不同速度）
         function generateRgvData() {
-            const rgvNames = ['RGV-01', 'RGV-02', 'RGV-03', 'RGV-04'];
+            const rgvList = [
+                { id: 'RGV-01', name: '穿梭车-01' },
+                { id: 'RGV-02', name: '穿梭车-02' },
+                { id: 'RGV-03', name: '穿梭车-03' },
+                { id: 'RGV-04', name: '穿梭车-04' }
+            ];
 
-            return rgvNames.map((name, index) => {
+            return rgvList.map((rgv, index) => {
+                const rgvId = rgv.id;
+                const rgvName = rgv.name;
+
                 // 获取当前角度并减少（逆时针移动）
-                let currentAngle = rgvAngles[name];
+                let currentAngle = rgvAngles[rgvId];
 
                 // 根据小车名称设置不同速度
                 let increment = 0;
-                if (name === 'RGV-01') {
-                    increment = ANGLE_INCREMENT_RGV01;  // RGV-01: 6度
-                } else if (name === 'RGV-02') {
-                    increment = ANGLE_INCREMENT_RGV02;  // RGV-02: 2度
-                } else if (name === 'RGV-03') {
-                    increment = ANGLE_INCREMENT_RGV03;  // RGV-03: 3度
-                } else if (name === 'RGV-04') {
-                    increment = ANGLE_INCREMENT_RGV04;  // RGV-04: 4度
+                if (rgvId === 'RGV-01') {
+                    increment = ANGLE_INCREMENT_RGV01;  // RGV-01: 0.75度
+                } else if (rgvId === 'RGV-02') {
+                    increment = ANGLE_INCREMENT_RGV02;  // RGV-02: 0.5度
+                } else if (rgvId === 'RGV-03') {
+                    increment = ANGLE_INCREMENT_RGV03;  // RGV-03: 0.7度
+                } else if (rgvId === 'RGV-04') {
+                    increment = ANGLE_INCREMENT_RGV04;  // RGV-04: 0.6度
                 }
 
                 currentAngle = (currentAngle - increment + 360) % 360;
-                rgvAngles[name] = currentAngle;
-                
+                rgvAngles[rgvId] = currentAngle;
+
                 const posData = getRgvPositionWithRotation(currentAngle);
-                
+
                 // 根据位置判断状态（模拟真实运行状态）
                 let status = 'running';
                 // 每辆小车有不同的运行模式，偶尔进入待机状态
@@ -2382,10 +2389,11 @@
                 } else if (index === 3 && currentAngle > 0 && currentAngle < 45) {
                     status = 'fault'; // RGV-04在特定位置故障
                 }
-                
+
                 return {
                     value: posData.position,
-                    name: name,
+                    name: rgvName,
+                    id: rgvId,
                     symbolRotate: posData.rotation,
                     status: status
                 };
@@ -2403,7 +2411,7 @@
             
             // 更新rgvDataMap中的位置信息
             newRgvData.forEach((rgv) => {
-                const rgvId = rgv.name;
+                const rgvId = rgv.id;
                 if (rgvDataMap[rgvId]) {
                     const x = Math.round(rgv.value[0]);
                     const y = Math.round(rgv.value[1]);
@@ -2430,14 +2438,6 @@
                 }]
             });
             
-            // 如果卡片正在显示，更新卡片位置跟随小车
-            if (currentRgvId && currentRgvCardPosition) {
-                const currentRgv = newRgvData.find(rgv => rgv.name === currentRgvId);
-                if (currentRgv) {
-                    currentRgvCardPosition = currentRgv.value;
-                    updateCardPosition(currentRgvCardPosition);
-                }
-            }
         }
         
         // 启动RGV位置自动刷新
@@ -2605,8 +2605,9 @@
         const rgvDataMap = {
             'RGV-01': {
                 position: '轨道上边-A段 (250, 25)',
-                material: '空调外机-1.5P变频',
-                quantity: '24 台',
+                material: '压缩机-转子组件',
+                quantity: '24 件',
+                mesOrder: 'MES-20240323-001',
                 startTime: '2024-03-23 14:32:18',
                 eta: '2024-03-23 14:52:30',
                 destination: '总装外5线-装配岗03',
@@ -2616,8 +2617,9 @@
             },
             'RGV-02': {
                 position: '轨道右边-B段 (700, 150)',
-                material: '空调内机-1P定频',
-                quantity: '36 台',
+                material: '冷凝器-铜管翅片',
+                quantity: '36 件',
+                mesOrder: 'MES-20240323-002',
                 startTime: '2024-03-23 14:45:22',
                 eta: '2024-03-23 15:05:00',
                 destination: '成品仓库-入库岗02',
@@ -2627,8 +2629,9 @@
             },
             'RGV-03': {
                 position: '轨道下边-C段 (400, 275)',
-                material: '压缩机-2P变频',
-                quantity: '18 台',
+                material: '蒸发器-铝箔翅片',
+                quantity: '18 件',
+                mesOrder: 'MES-20240323-003',
                 startTime: '2024-03-23 14:28:10',
                 eta: '2024-03-23 14:48:45',
                 destination: '总装外4线-装配岗01',
@@ -2638,8 +2641,9 @@
             },
             'RGV-04': {
                 position: '轨道左边-D段 (100, 100)',
-                material: '冷凝器-1.5P通用',
-                quantity: '42 台',
+                material: '电子膨胀阀-控制器',
+                quantity: '42 件',
+                mesOrder: 'MES-20240323-004',
                 startTime: '2024-03-23 14:50:05',
                 eta: '2024-03-23 15:10:20',
                 destination: '两器车间-焊接岗05',
@@ -2649,18 +2653,14 @@
             }
         };
 
-        // 当前显示的RGV卡片位置
-        let currentRgvCardPosition = null;
-        
-        function openRgvCard(rgvId, position) {
+        function openRgvCard(rgvId, rgvName, position) {
             currentRgvId = rgvId;
-            currentRgvCardPosition = position;
             const data = rgvDataMap[rgvId];
             if (!data) return;
 
             // 更新卡片标题
-            document.getElementById('rgvCardTitle').textContent = rgvId + ' 运输详情';
-            
+            document.getElementById('rgvCardTitle').textContent = rgvName + ' 运输详情';
+
             // 更新卡片内容
             const statusElement = document.getElementById('rgvStatus');
             statusElement.textContent = data.statusText;
@@ -2672,78 +2672,58 @@
             } else if (data.status === 'fault') {
                 statusElement.style.color = '#ff6b6b';
             }
-            
+
             document.getElementById('rgvPosition').textContent = data.position;
             document.getElementById('rgvMaterial').textContent = data.material;
             document.getElementById('rgvQuantity').textContent = data.quantity;
+            document.getElementById('rgvMesOrder').textContent = data.mesOrder;
             document.getElementById('rgvStartTime').textContent = data.startTime;
             document.getElementById('rgvEta').textContent = data.eta;
             document.getElementById('rgvDestination').textContent = data.destination;
             document.getElementById('rgvOperator').textContent = data.operator;
 
-            // 显示卡片并设置位置（跟随小车）
+            // 显示卡片并设置位置（固定在轨道中间）
             const card = document.getElementById('rgvCard');
             card.classList.add('show');
-            
-            // 计算卡片位置（在小车上方）
-            updateCardPosition(position);
-            
+
+            // 将卡片固定在环形轨道中间位置
+            setCardToCenterPosition();
+
             // 清除之前的定时器
             if (rgvUpdateInterval) {
                 clearInterval(rgvUpdateInterval);
             }
-            
+
             // 立即更新一次时间
             updateRgvElapsedTime(data.startTime);
-            
+
             // 每秒更新时间
             rgvUpdateInterval = setInterval(() => {
                 updateRgvElapsedTime(data.startTime);
             }, 1000);
         }
-        
-        // 更新卡片位置（跟随小车）
-        function updateCardPosition(position) {
+
+        // 将卡片设置在轨道中间固定位置
+        function setCardToCenterPosition() {
             const card = document.getElementById('rgvCard');
-            if (!card || !card.classList.contains('show')) return;
-            
+            if (!card) return;
+
             const rgvMap = document.getElementById('rgvMap');
             const mapRect = rgvMap.getBoundingClientRect();
-            
-            // ECharts坐标系转换：将数据坐标转换为像素坐标
-            const chartWidth = mapRect.width;
-            const chartHeight = mapRect.height;
-            
-            // 根据ECharts的grid配置计算实际绘图区域
-            const gridLeft = 20;
-            const gridRight = 20;
-            const gridTop = 20;
-            const gridBottom = 20;
-            
-            const drawWidth = chartWidth - gridLeft - gridRight;
-            const drawHeight = chartHeight - gridTop - gridBottom;
-            
-            // ECharts坐标范围
-            const xMin = 0, xMax = 800;
-            const yMin = 0, yMax = 300;
-            
-            // 将数据坐标转换为像素坐标
-            const pixelX = gridLeft + (position[0] - xMin) / (xMax - xMin) * drawWidth;
-            const pixelY = gridTop + (position[1] - yMin) / (yMax - yMin) * drawHeight;
-            
-            // 设置卡片位置（在小车上方，水平居中）
+
+            // 卡片固定在轨道中间（轨道中心点约为 400, 150）
             const cardWidth = 320;
             const cardHeight = card.offsetHeight || 350;
-            const offsetY = 20; // 小车与卡片之间的间距
-            
-            let left = pixelX - cardWidth / 2;
-            let top = pixelY - cardHeight - offsetY;
-            
-            // 边界检查：确保卡片不超出地图区域
-            if (left < 10) left = 10;
-            if (left + cardWidth > chartWidth - 10) left = chartWidth - cardWidth - 10;
-            if (top < 10) top = pixelY + 30; // 如果上方空间不足，显示在小车下方
-            
+
+            // 计算轨道中心位置（相对于地图容器）
+            // 轨道范围：x: 100-700, y: 25-275，中心点约为 (400, 150)
+            const centerX = mapRect.width / 2;
+            const centerY = mapRect.height / 2;
+
+            // 设置卡片居中显示
+            const left = centerX - cardWidth / 2;
+            const top = centerY - cardHeight / 2;
+
             card.style.left = left + 'px';
             card.style.top = top + 'px';
         }
@@ -2755,7 +2735,6 @@
                 rgvUpdateInterval = null;
             }
             currentRgvId = null;
-            currentRgvCardPosition = null;
         }
 
         // 更新已运送时间

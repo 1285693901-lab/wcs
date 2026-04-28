@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环线WCS物流跟踪 - 任务监控 增强版</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #061018 0%, #0d2840 50%, #081525 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* ========== Header ========== */
+        .header {
+            background: linear-gradient(90deg, rgba(0, 50, 100, 0.9) 0%, rgba(0, 70, 140, 0.85) 50%, rgba(0, 50, 100, 0.9) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            border-radius: 12px;
+            padding: 16px 40px;
+            position: relative;
+            overflow: hidden;
+            height: 90px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(0, 180, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(0, 180, 255, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        .tech-circuit {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            opacity: 0.12;
+            pointer-events: none;
+            background-image:
+                linear-gradient(90deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%),
+                linear-gradient(0deg, transparent 0%, transparent 48%, rgba(0, 180, 255, 0.3) 49%, rgba(0, 180, 255, 0.3) 51%, transparent 52%, transparent 100%);
+            background-size: 80px 80px;
+        }
+
+        .header::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00b4ff, transparent);
+        }
+
+        .header::after {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.5), transparent);
+        }
+
+        .corner {
+            position: absolute;
+            width: 24px; height: 24px;
+            border-color: #00b4ff;
+            border-style: solid;
+        }
+        .corner-tl { top: 5px; left: 5px; border-width: 2px 0 0 2px; }
+        .corner-tr { top: 5px; right: 5px; border-width: 2px 2px 0 0; }
+        .corner-bl { bottom: 5px; left: 5px; border-width: 0 0 2px 2px; }
+        .corner-br { bottom: 5px; right: 5px; border-width: 0 2px 2px 0; }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 8px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 0 40px rgba(0, 180, 255, 0.8), 0 0 80px rgba(0, 180, 255, 0.4);
+        }
+
+        .header-subtitle {
+            text-align: center;
+            color: rgba(0, 180, 255, 0.6);
+            font-size: 13px;
+            margin-top: 6px;
+            letter-spacing: 4px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .nav-buttons {
+            position: absolute;
+            top: calc(60% + 8px);
+            left: 50%;
+            transform: translate(calc(-50% - 416px), -50%);
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            padding: 7px 14px;
+            background: rgba(0, 60, 100, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 100, 150, 0.6);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.3);
+        }
+
+        .nav-btn.active {
+            background: rgba(0, 180, 255, 0.25);
+            border-color: rgba(0, 180, 255, 0.6);
+            color: #00b4ff;
+            font-weight: 600;
+            box-shadow: 0 0 20px rgba(0, 180, 255, 0.4);
+        }
+
+        /* ========== Stats Row ========== */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .stat-card {
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 10px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(0, 180, 255, 0.5);
+            background: rgba(0, 60, 100, 0.7);
+        }
+        .stat-card.active { border-color: var(--accent); box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.3); }
+
+        .stat-icon {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .stat-info { flex: 1; min-width: 0; }
+        .stat-label { font-size: 11px; color: rgba(255, 255, 255, 0.5); }
+        .stat-value { font-size: 22px; font-weight: 700; margin-top: 2px; }
+        .stat-sub { font-size: 10px; color: rgba(255, 255, 255, 0.35); margin-top: 1px; }
+
+        /* ========== Main Content ========== */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .left-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+        }
+
+        /* ========== Filter Bar ========== */
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 10px;
+            align-items: center;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 60, 100, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            padding: 6px 10px;
+            min-width: 180px;
+        }
+
+        .search-box input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 12px;
+            outline: none;
+            width: 100%;
+        }
+        .search-box input::placeholder { color: rgba(255, 255, 255, 0.3); }
+
+        .filter-select {
+            padding: 6px 10px;
+            background: rgba(0, 60, 100, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            outline: none;
+        }
+        .filter-select option { background: #0d2840; color: #fff; }
+
+        .view-toggle {
+            display: flex;
+            margin-left: auto;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 180, 255, 0.3);
+        }
+
+        .view-btn {
+            padding: 6px 12px;
+            background: rgba(0, 60, 100, 0.6);
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .view-btn.active { background: rgba(0, 180, 255, 0.3); color: #00b4ff; }
+        .view-btn + .view-btn { border-left: 1px solid rgba(0, 180, 255, 0.2); }
+
+        /* ========== Task Table ========== */
+        .task-table-container {
+            flex: 1;
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .task-table-header {
+            padding: 12px 16px;
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.15) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .task-table-title { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: 1px; }
+
+        .task-count {
+            margin-left: auto;
+            background: rgba(0, 180, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #00b4ff;
+        }
+
+        .table-scroll {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .task-table-header-fixed {
+            flex-shrink: 0;
+        }
+
+        .task-table-scroll {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .task-table-scroll-inner {
+            animation: scrollUp 30s linear infinite;
+        }
+
+        .task-table-scroll-inner:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes scrollUp {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
+        }
+
+        .task-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            table-layout: fixed;
+        }
+
+        .task-table thead {
+            background: rgba(0, 50, 100, 0.98);
+        }
+
+        .task-table th {
+            padding: 10px 10px;
+            text-align: left;
+            color: rgba(0, 180, 255, 0.85);
+            font-weight: 600;
+            font-size: 11px;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.3);
+            white-space: nowrap;
+        }
+
+        .task-table th:first-child { padding-left: 16px; }
+        .task-table td:first-child { padding-left: 16px; }
+
+        .task-table td {
+            padding: 10px 10px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.08);
+            color: rgba(255, 255, 255, 0.9);
+            white-space: nowrap;
+        }
+
+        .task-table tbody tr {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .task-table tbody tr:hover {
+            background: rgba(0, 180, 255, 0.08);
+        }
+
+        .task-table tbody tr.selected {
+            background: rgba(0, 180, 255, 0.15);
+        }
+
+        .task-table tbody tr.new-row {
+            animation: highlightNew 2s ease;
+        }
+
+        @keyframes highlightNew {
+            0% { background: rgba(0, 255, 136, 0.3); }
+            100% { background: transparent; }
+        }
+
+        /* Status tags */
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .tag.waiting { background: rgba(255, 170, 0, 0.15); color: #ffaa00; border: 1px solid rgba(255, 170, 0, 0.3); }
+        .tag.running { background: rgba(0, 180, 255, 0.15); color: #00b4ff; border: 1px solid rgba(0, 180, 255, 0.3); }
+        .tag.completed { background: rgba(0, 255, 136, 0.15); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.3); }
+        .tag.cancelled { background: rgba(255, 68, 68, 0.15); color: #ff4444; border: 1px solid rgba(255, 68, 68, 0.3); }
+        .tag.urgent { background: rgba(255, 68, 68, 0.15); color: #ff4444; border: 1px solid rgba(255, 68, 68, 0.3); }
+        .tag.high { background: rgba(255, 107, 157, 0.15); color: #ff6b9d; border: 1px solid rgba(255, 107, 157, 0.3); }
+        .tag.normal { background: rgba(0, 180, 255, 0.15); color: #00b4ff; border: 1px solid rgba(0, 180, 255, 0.3); }
+        .tag.low { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.5); border: 1px solid rgba(255, 255, 255, 0.15); }
+
+        .dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .dot.running { background: #00b4ff; animation: dotPulse 1.5s infinite; }
+        .dot.waiting { background: #ffaa00; }
+        .dot.completed { background: #00ff88; }
+        .dot.cancelled { background: #ff4444; }
+
+        @keyframes dotPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .task-id-link { color: #00b4ff; font-family: monospace; font-size: 12px; }
+
+
+        /* ========== Gantt View ========== */
+        .gantt-container {
+            flex: 1;
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            display: none;
+            min-height: 0;
+        }
+        .gantt-container.show { display: flex; }
+        .gantt-container .task-table-container { display: flex; }
+        #ganttChart { width: 100%; height: 100%; }
+
+        /* ========== Right Panel ========== */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+        }
+
+        .panel-card {
+            background: linear-gradient(145deg, rgba(0, 50, 100, 0.75) 0%, rgba(0, 30, 60, 0.85) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 10px 14px;
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.15) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title { font-size: 14px; font-weight: 600; color: #fff; }
+
+        .panel-content { padding: 10px; }
+
+        .chart-box { height: 170px; }
+
+        .stats-list { display: flex; flex-direction: column; gap: 6px; }
+
+        .stats-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            background: rgba(0, 30, 60, 0.5);
+            border-radius: 6px;
+        }
+
+        .stats-item-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .stats-item-dot {
+            width: 8px; height: 8px;
+            border-radius: 2px;
+        }
+
+        .stats-item-value {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        /* Efficiency metrics */
+        .metric-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 10px;
+            background: rgba(0, 30, 60, 0.5);
+            border-radius: 8px;
+        }
+
+        .metric-value { font-size: 18px; font-weight: 700; color: #00b4ff; }
+        .metric-label { font-size: 10px; color: rgba(255, 255, 255, 0.4); margin-top: 2px; }
+
+        /* ========== Modal ========== */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: linear-gradient(145deg, rgba(0, 50, 100, 0.95) 0%, rgba(0, 30, 60, 0.98) 100%);
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            border-radius: 16px;
+            width: 700px;
+            max-width: 95%;
+            max-height: 85vh;
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            padding: 14px 18px;
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.15) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title { font-size: 15px; font-weight: 600; color: #fff; }
+        .modal-status-badge {
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .modal-close {
+            width: 28px; height: 28px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #fff;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        .modal-close:hover { background: rgba(255, 68, 68, 0.3); border-color: rgba(255, 68, 68, 0.5); }
+
+        .modal-body {
+            padding: 16px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .detail-item {
+            background: rgba(0, 40, 80, 0.5);
+            border: 1px solid rgba(0, 180, 255, 0.15);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .detail-label { font-size: 10px; color: rgba(255, 255, 255, 0.4); margin-bottom: 4px; }
+        .detail-value { font-size: 14px; font-weight: 600; color: #fff; }
+        .detail-value.mono { font-family: monospace; font-size: 12px; }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #00b4ff;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 3px; height: 12px;
+            background: linear-gradient(180deg, #00b4ff, #0088ff);
+            border-radius: 2px;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: rgba(0, 180, 255, 0.3);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding: 6px 0 12px 14px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -16px;
+            top: 8px;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #00b4ff;
+            border: 2px solid rgba(0, 50, 100, 0.95);
+        }
+        .timeline-item.done::before { background: #00ff88; }
+        .timeline-item.active::before { background: #00b4ff; animation: dotPulse 1.5s infinite; }
+
+        .timeline-time { font-size: 10px; color: rgba(255, 255, 255, 0.4); }
+        .timeline-desc { font-size: 12px; color: rgba(255, 255, 255, 0.8); margin-top: 2px; }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(0, 180, 255, 0.15);
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 9px 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .modal-btn.primary { background: linear-gradient(135deg, #00b4ff, #0088ff); color: #fff; }
+        .modal-btn.primary:hover { box-shadow: 0 0 15px rgba(0, 180, 255, 0.5); }
+        .modal-btn.danger { background: linear-gradient(135deg, #ff4444, #cc0000); color: #fff; }
+        .modal-btn.danger:hover { box-shadow: 0 0 15px rgba(255, 68, 68, 0.5); }
+        .modal-btn.secondary { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .modal-btn.secondary:hover { background: rgba(255, 255, 255, 0.2); }
+
+        /* ========== Empty State ========== */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+        .empty-state-text { font-size: 15px; }
+        .empty-state-hint { font-size: 11px; margin-top: 6px; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 40, 80, 0.3); }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 180, 255, 0.3); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 180, 255, 0.5); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-bg"></div>
+            <div class="tech-circuit"></div>
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+            <div class="nav-buttons">
+                <a href="wcs-dashboard.html" class="nav-btn">环线总览</a>
+                <a href="wcs-dashboard-enhanced.html" class="nav-btn">总览增强</a>
+                <a href="wcs-tasks.html" class="nav-btn">任务监控</a>
+                <a href="wcs-tasks-enhanced.html" class="nav-btn active">任务增强</a>
+                <a href="wcs-devices.html" class="nav-btn">设备管理</a>
+                <a href="wcs-devices-enhanced.html" class="nav-btn">设备增强</a>
+            </div>
+            <h1>环线WCS物流跟踪系统</h1>
+            <div class="header-subtitle">TASK MONITOR - ENHANCED</div>
+        </header>
+
+        <!-- Stats Row -->
+        <div class="stats-row" id="statsRow">
+            <div class="stat-card" data-filter="all" onclick="quickStatusFilter('all')">
+                <div class="stat-icon" style="background:rgba(0,180,255,0.15);border:1px solid rgba(0,180,255,0.3);">📋</div>
+                <div class="stat-info">
+                    <div class="stat-label">任务总数</div>
+                    <div class="stat-value" style="color:#00b4ff;" id="statTotal">15</div>
+                    <div class="stat-sub">全部任务</div>
+                </div>
+            </div>
+            <div class="stat-card" data-filter="waiting" onclick="quickStatusFilter('waiting')">
+                <div class="stat-icon" style="background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.3);">⏳</div>
+                <div class="stat-info">
+                    <div class="stat-label">等待中</div>
+                    <div class="stat-value" style="color:#ffaa00;" id="statWaiting">4</div>
+                    <div class="stat-sub" id="statWaitingPct">26.7%</div>
+                </div>
+            </div>
+            <div class="stat-card" data-filter="running" onclick="quickStatusFilter('running')">
+                <div class="stat-icon" style="background:rgba(0,180,255,0.15);border:1px solid rgba(0,180,255,0.3);">▶</div>
+                <div class="stat-info">
+                    <div class="stat-label">执行中</div>
+                    <div class="stat-value" style="color:#00b4ff;" id="statRunning">5</div>
+                    <div class="stat-sub" id="statRunningPct">33.3%</div>
+                </div>
+            </div>
+            <div class="stat-card" data-filter="completed" onclick="quickStatusFilter('completed')">
+                <div class="stat-icon" style="background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.3);">✓</div>
+                <div class="stat-info">
+                    <div class="stat-label">已完成</div>
+                    <div class="stat-value" style="color:#00ff88;" id="statCompleted">6</div>
+                    <div class="stat-sub" id="statCompletedPct">40.0%</div>
+                </div>
+            </div>
+            <div class="stat-card" data-filter="urgent" onclick="quickPriorityFilter('urgent')">
+                <div class="stat-icon" style="background:rgba(255,68,68,0.15);border:1px solid rgba(255,68,68,0.3);">🔴</div>
+                <div class="stat-info">
+                    <div class="stat-label">紧急任务</div>
+                    <div class="stat-value" style="color:#ff4444;" id="statUrgent">2</div>
+                    <div class="stat-sub">需优先处理</div>
+                </div>
+            </div>
+            <div class="stat-card" data-filter="efficiency">
+                <div class="stat-icon" style="background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);">📊</div>
+                <div class="stat-info">
+                    <div class="stat-label">今日效率</div>
+                    <div class="stat-value" style="color:#8b5cf6;" id="statEfficiency">88</div>
+                    <div class="stat-sub">完成率 %</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="left-section">
+                <!-- Filter Bar -->
+                <div class="filter-bar">
+                    <div class="search-box">
+                        <span style="color:rgba(255,255,255,0.3);font-size:12px;">🔍</span>
+                        <input type="text" id="searchInput" placeholder="搜索任务ID/设备/位置..." oninput="applyFilters()">
+                    </div>
+                    <select class="filter-select" id="typeFilter" onchange="applyFilters()">
+                        <option value="">全部类型</option>
+                        <option value="inbound">入库</option>
+                        <option value="outbound">出库</option>
+                        <option value="transfer">移库</option>
+                    </select>
+                    <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+                        <option value="">全部状态</option>
+                        <option value="waiting">等待中</option>
+                        <option value="running">执行中</option>
+                        <option value="completed">已完成</option>
+                        <option value="cancelled">已取消</option>
+                    </select>
+                    <select class="filter-select" id="priorityFilter" onchange="applyFilters()">
+                        <option value="">全部优先级</option>
+                        <option value="urgent">紧急</option>
+                        <option value="high">高</option>
+                        <option value="normal">普通</option>
+                        <option value="low">低</option>
+                    </select>
+                    <select class="filter-select" id="deviceFilter" onchange="applyFilters()">
+                        <option value="">全部设备</option>
+                        <option value="RGV-01">RGV-01</option>
+                        <option value="RGV-02">RGV-02</option>
+                        <option value="RGV-03">RGV-03</option>
+                        <option value="RGV-04">RGV-04</option>
+                        <option value="RGV-05">RGV-05</option>
+                        <option value="RGV-06">RGV-06</option>
+                        <option value="RGV-07">RGV-07</option>
+                        <option value="RGV-08">RGV-08</option>
+                    </select>
+                    <div class="view-toggle">
+                        <button class="view-btn active" data-view="table" onclick="switchView('table')">📋 列表</button>
+                        <button class="view-btn" data-view="gantt" onclick="switchView('gantt')">📅 时间线</button>
+                    </div>
+                </div>
+
+                <!-- Table View -->
+                <div class="task-table-container" id="tableView">
+                    <div class="task-table-header">
+                        <span class="task-table-title">任务列表</span>
+                        <span class="task-count" id="taskCount">共 15 条</span>
+                    </div>
+                    <div class="table-scroll">
+                        <table class="task-table task-table-header-fixed">
+                            <colgroup>
+                                <col style="width:14%;">
+                                <col style="width:8%;">
+                                <col style="width:13%;">
+                                <col style="width:13%;">
+                                <col style="width:10%;">
+                                <col style="width:8%;">
+                                <col style="width:10%;">
+                                <col style="width:12%;">
+                                <col style="width:12%;">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th>任务ID</th>
+                                    <th>类型</th>
+                                    <th>起始点</th>
+                                    <th>目标点</th>
+                                    <th>状态</th>
+                                    <th>优先级</th>
+                                    <th>执行设备</th>
+                                    <th>创建时间</th>
+                                    <th>预计耗时</th>
+                                </tr>
+                            </thead>
+                        </table>
+                        <div class="task-table-scroll" id="taskTableScroll">
+                            <div class="task-table-scroll-inner" id="taskTableScrollInner">
+                                <table class="task-table">
+                                    <colgroup>
+                                        <col style="width:14%;">
+                                        <col style="width:8%;">
+                                        <col style="width:13%;">
+                                        <col style="width:13%;">
+                                        <col style="width:10%;">
+                                        <col style="width:8%;">
+                                        <col style="width:10%;">
+                                        <col style="width:12%;">
+                                        <col style="width:12%;">
+                                    </colgroup>
+                                    <tbody id="taskTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gantt View -->
+                <div class="gantt-container" id="ganttView">
+                    <div class="task-table-header">
+                        <span class="task-table-title">任务时间线</span>
+                        <span class="task-count" id="ganttCount">共 15 条</span>
+                    </div>
+                    <div id="ganttChart"></div>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="right-panel">
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <span class="panel-title">任务类型分布</span>
+                    </div>
+                    <div class="panel-content">
+                        <div class="chart-box" id="typeChart"></div>
+                        <div class="metric-row">
+                            <div class="metric-item">
+                                <div class="metric-value" id="avgTime">4.2</div>
+                                <div class="metric-label">平均处理时间 (分钟)</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value" id="completionRate">88</div>
+                                <div class="metric-label">今日完成率 (%)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <span class="panel-title">任务状态统计</span>
+                    </div>
+                    <div class="panel-content">
+                        <div class="stats-list" id="statusStats"></div>
+                    </div>
+                </div>
+
+                <div class="panel-card" style="flex:1;">
+                    <div class="panel-header">
+                        <span class="panel-title">今日任务趋势</span>
+                    </div>
+                    <div class="panel-content" style="height:calc(100% - 50px);">
+                        <div class="chart-box" id="trendChart" style="height:100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Detail Modal -->
+    <div class="modal-overlay" id="taskModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span class="modal-title" id="modalTaskId">TSK-202604001</span>
+                    <span class="modal-status-badge" id="modalStatusBadge">执行中</span>
+                </div>
+                <div class="modal-close" onclick="closeTaskModal()">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div class="section-title">基本信息</div>
+                <div class="detail-grid">
+                    <div class="detail-item"><div class="detail-label">任务类型</div><div class="detail-value" id="modalType">-</div></div>
+                    <div class="detail-item"><div class="detail-label">当前状态</div><div class="detail-value" id="modalStatus">-</div></div>
+                    <div class="detail-item"><div class="detail-label">起始点</div><div class="detail-value" id="modalFrom">-</div></div>
+                    <div class="detail-item"><div class="detail-label">目标点</div><div class="detail-value" id="modalTo">-</div></div>
+                    <div class="detail-item"><div class="detail-label">优先级</div><div class="detail-value" id="modalPriority">-</div></div>
+                    <div class="detail-item"><div class="detail-label">执行设备</div><div class="detail-value" id="modalDevice">-</div></div>
+                    <div class="detail-item"><div class="detail-label">创建时间</div><div class="detail-value mono" id="modalCreateTime">-</div></div>
+                    <div class="detail-item"><div class="detail-label">预计完成</div><div class="detail-value mono" id="modalEta">-</div></div>
+                    <div class="detail-item"><div class="detail-label">关联MES订单</div><div class="detail-value mono" id="modalMesOrder">-</div></div>
+                    <div class="detail-item"><div class="detail-label">操作人</div><div class="detail-value" id="modalOperator">-</div></div>
+                </div>
+
+                <div class="section-title">任务时间线</div>
+                <div class="timeline" id="taskTimeline"></div>
+
+                <div class="modal-actions">
+                    <button class="modal-btn primary" onclick="cancelWaitingTask()" id="btnCancelWaiting" style="display:none;">取消等待</button>
+                    <button class="modal-btn danger" onclick="cancelRunningTask()" id="btnCancelRunning" style="display:none;">强制终止</button>
+                    <button class="modal-btn secondary" onclick="closeTaskModal()">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== Data ====================
+        const tasksData = [
+            { id: 'TSK-202604001', type: 'inbound', from: '入库区-A01', to: '缓存区-C05', status: 'completed', priority: 'normal', createTime: '2026-04-28 08:30:15', device: 'RGV-01', duration: 18, operator: '张三', mesOrder: 'MES-20260428-001' },
+            { id: 'TSK-202604002', type: 'outbound', from: '缓存区-C12', to: '出库区-B03', status: 'running', priority: 'high', createTime: '2026-04-28 08:32:42', device: 'RGV-02', duration: 25, operator: '李四', mesOrder: 'MES-20260428-002' },
+            { id: 'TSK-202604003', type: 'transfer', from: '检验区-D02', to: '包装区-E08', status: 'waiting', priority: 'normal', createTime: '2026-04-28 08:35:18', device: '-', duration: 15, operator: '-', mesOrder: 'MES-20260428-003' },
+            { id: 'TSK-202604004', type: 'inbound', from: '入库区-A03', to: '缓存区-C08', status: 'running', priority: 'normal', createTime: '2026-04-28 08:38:05', device: 'RGV-03', duration: 22, operator: '王五', mesOrder: 'MES-20260428-004' },
+            { id: 'TSK-202604005', type: 'outbound', from: '缓存区-C15', to: '出库区-B01', status: 'waiting', priority: 'urgent', createTime: '2026-04-28 08:41:22', device: '-', duration: 30, operator: '-', mesOrder: 'MES-20260428-005' },
+            { id: 'TSK-202604006', type: 'transfer', from: '分拣区-F04', to: '检验区-D06', status: 'completed', priority: 'normal', createTime: '2026-04-28 08:44:38', device: 'RGV-04', duration: 20, operator: '赵六', mesOrder: 'MES-20260428-006' },
+            { id: 'TSK-202604007', type: 'inbound', from: '入库区-A02', to: '缓存区-C03', status: 'completed', priority: 'normal', createTime: '2026-04-28 08:47:55', device: 'RGV-05', duration: 16, operator: '钱七', mesOrder: 'MES-20260428-007' },
+            { id: 'TSK-202604008', type: 'outbound', from: '缓存区-C09', to: '出库区-B05', status: 'running', priority: 'high', createTime: '2026-04-28 08:51:12', device: 'RGV-06', duration: 28, operator: '孙八', mesOrder: 'MES-20260428-008' },
+            { id: 'TSK-202604009', type: 'transfer', from: '包装区-E03', to: '出库区-B02', status: 'waiting', priority: 'normal', createTime: '2026-04-28 08:54:29', device: '-', duration: 12, operator: '-', mesOrder: 'MES-20260428-009' },
+            { id: 'TSK-202604010', type: 'inbound', from: '入库区-A05', to: '缓存区-C11', status: 'completed', priority: 'normal', createTime: '2026-04-28 08:57:46', device: 'RGV-07', duration: 19, operator: '周九', mesOrder: 'MES-20260428-010' },
+            { id: 'TSK-202604011', type: 'outbound', from: '缓存区-C07', to: '出库区-B04', status: 'running', priority: 'normal', createTime: '2026-04-28 09:01:03', device: 'RGV-08', duration: 24, operator: '吴十', mesOrder: 'MES-20260428-011' },
+            { id: 'TSK-202604012', type: 'transfer', from: '检验区-D05', to: '包装区-E06', status: 'completed', priority: 'low', createTime: '2026-04-28 09:04:20', device: 'RGV-01', duration: 14, operator: '张三', mesOrder: 'MES-20260428-012' },
+            { id: 'TSK-202604013', type: 'inbound', from: '入库区-A04', to: '缓存区-C14', status: 'waiting', priority: 'normal', createTime: '2026-04-28 09:07:37', device: '-', duration: 17, operator: '-', mesOrder: 'MES-20260428-013' },
+            { id: 'TSK-202604014', type: 'outbound', from: '缓存区-C02', to: '出库区-B06', status: 'cancelled', priority: 'high', createTime: '2026-04-28 09:10:54', device: 'RGV-02', duration: 0, operator: '李四', mesOrder: 'MES-20260428-014' },
+            { id: 'TSK-202604015', type: 'transfer', from: '分拣区-F02', to: '检验区-D03', status: 'running', priority: 'normal', createTime: '2026-04-28 09:14:11', device: 'RGV-03', duration: 21, operator: '王五', mesOrder: 'MES-20260428-015' },
+        ];
+
+        let filteredTasks = [...tasksData];
+        let selectedTaskId = null;
+        let currentView = 'table';
+        let currentStatusFilter = '';
+        let ganttChart = null;
+
+        // ==================== Render ====================
+        function applyFilters() {
+            const typeFilter = document.getElementById('typeFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const priorityFilter = document.getElementById('priorityFilter').value;
+            const deviceFilter = document.getElementById('deviceFilter').value;
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+
+            filteredTasks = tasksData.filter(task => {
+                const typeMatch = !typeFilter || task.type === typeFilter;
+                const statusMatch = !statusFilter || task.status === statusFilter;
+                const priorityMatch = !priorityFilter || task.priority === priorityFilter;
+                const deviceMatch = !deviceFilter || task.device === deviceFilter;
+                const searchMatch = !searchText ||
+                    task.id.toLowerCase().includes(searchText) ||
+                    task.device.toLowerCase().includes(searchText) ||
+                    task.from.includes(searchText) ||
+                    task.to.includes(searchText) ||
+                    task.operator.includes(searchText);
+                return typeMatch && statusMatch && priorityMatch && deviceMatch && searchMatch;
+            });
+
+            // Sort: urgent+waiting > high+waiting > waiting > running > completed
+            const statusOrder = { waiting: 0, running: 1, completed: 2, cancelled: 3 };
+            const priorityOrder = { urgent: 0, high: 1, normal: 2, low: 3 };
+            filteredTasks.sort((a, b) => {
+                if (a.status !== b.status) return statusOrder[a.status] - statusOrder[b.status];
+                if (a.priority !== b.priority) return priorityOrder[a.priority] - priorityOrder[b.priority];
+                return b.createTime.localeCompare(a.createTime);
+            });
+
+            currentStatusFilter = statusFilter;
+            updateStatHighlight();
+
+            if (currentView === 'table') renderTable();
+            else renderGantt();
+
+            updateStats();
+            updateStatCards();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('taskTableBody');
+            const container = document.getElementById('taskCount');
+
+            container.textContent = `共 ${filteredTasks.length} 条`;
+
+            if (filteredTasks.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">没有匹配的任务</div><div class="empty-state-hint">尝试调整筛选条件</div></div></td></tr>`;
+                document.getElementById('taskTableScrollInner').style.animation = 'none';
+                return;
+            }
+
+            var rows = filteredTasks.map(function(task) {
+                return '<tr onclick="showTaskDetail(\'' + task.id + '\')">' +
+                    '<td><span class="task-id-link">' + task.id + '</span></td>' +
+                    '<td><span class="tag ' + (task.type === 'inbound' ? 'completed' : (task.type === 'outbound' ? 'high' : 'running')) + '">' +
+                        getTypeIcon(task.type) + ' ' + getTypeText(task.type) +
+                    '</span></td>' +
+                    '<td>' + task.from + '</td>' +
+                    '<td>' + task.to + '</td>' +
+                    '<td><span class="tag ' + task.status + '"><span class="dot ' + task.status + '"></span> ' + getStatusText(task.status) + '</span></td>' +
+                    '<td><span class="tag ' + task.priority + '">' + getPriorityText(task.priority) + '</span></td>' +
+                    '<td>' + task.device + '</td>' +
+                    '<td style="font-size:11px;color:rgba(255,255,255,0.5);">' + task.createTime.slice(11) + '</td>' +
+                    '<td>' + (task.duration > 0 ? task.duration + ' 分钟' : '-') + '</td>' +
+                '</tr>';
+            }).join('');
+
+            // 复制一份数据实现无缝滚动
+            tbody.innerHTML = rows + rows;
+
+            // 重置滚动动画
+            var scrollEl = document.getElementById('taskTableScrollInner');
+            scrollEl.style.animation = 'none';
+            scrollEl.offsetHeight;
+            scrollEl.style.animation = '';
+        }
+
+        // ==================== Gantt View ====================
+        function renderGantt() {
+            if (!ganttChart) ganttChart = echarts.init(document.getElementById('ganttChart'));
+
+            document.getElementById('ganttCount').textContent = `共 ${filteredTasks.length} 条`;
+
+            const runningTasks = filteredTasks.filter(t => t.status === 'running' || t.status === 'waiting');
+            if (runningTasks.length === 0) {
+                ganttChart.setOption({
+                    title: { text: '暂无进行中的任务', left: 'center', top: 'center', textStyle: { color: 'rgba(255,255,255,0.4)', fontSize: 14 } },
+                });
+                return;
+            }
+
+            const now = new Date();
+            const categories = runningTasks.map(t => t.id);
+            const data = runningTasks.map((t, i) => {
+                const startTime = new Date(t.createTime);
+                const startHour = startTime.getHours() + startTime.getMinutes() / 60;
+                const endHour = startHour + t.duration / 60;
+                const color = t.priority === 'urgent' ? '#ff4444' : (t.priority === 'high' ? '#ff6b9d' : (t.status === 'running' ? '#00b4ff' : '#ffaa00'));
+                return {
+                    name: t.id,
+                    value: [i, startHour, endHour, t.duration],
+                    itemStyle: { color: color }
+                };
+            });
+
+            ganttChart.setOption({
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: 'rgba(0,40,80,0.95)',
+                    borderColor: 'rgba(0,180,255,0.3)',
+                    textStyle: { color: '#fff', fontSize: 12 },
+                    formatter: function(p) {
+                        const t = runningTasks[p.dataIndex];
+                        return `${t.id}<br/>${t.from} → ${t.to}<br/>${getStatusText(t.status)} | ${getPriorityText(t.priority)}<br/>${t.duration}分钟`;
+                    }
+                },
+                grid: { left: 120, right: 30, top: 20, bottom: 30 },
+                xAxis: {
+                    type: 'value', min: 8, max: 18,
+                    axisLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 10, formatter: '{value}:00' },
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
+                    name: '时间 (小时)', nameTextStyle: { color: 'rgba(255,255,255,0.4)', fontSize: 10 },
+                },
+                yAxis: {
+                    type: 'category', data: categories,
+                    axisLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 10 },
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                },
+                series: [{
+                    type: 'custom',
+                    renderItem: function(params, api) {
+                        const catIndex = api.value(0);
+                        const start = api.coord([api.value(1), catIndex]);
+                        const end = api.coord([api.value(2), catIndex]);
+                        const height = api.size([0, 1])[1] * 0.6;
+                        return {
+                            type: 'rect',
+                            shape: {
+                                x: start[0],
+                                y: start[1] - height / 2,
+                                width: Math.max(end[0] - start[0], 4),
+                                height: height,
+                            },
+                            style: { fill: api.visual('color'), rx: 4, ry: 4 },
+                        };
+                    },
+                    data: data,
+                    encode: { x: [1, 2], y: 0 },
+                }],
+            });
+        }
+
+        function switchView(view) {
+            currentView = view;
+            document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+            document.getElementById('tableView').style.display = view === 'table' ? 'flex' : 'none';
+            document.getElementById('ganttView').classList.toggle('show', view === 'gantt');
+
+            if (view === 'table') renderTable();
+            else {
+                setTimeout(() => {
+                    renderGantt();
+                    if (ganttChart) ganttChart.resize();
+                }, 100);
+            }
+        }
+
+        // ==================== Stats ====================
+        function updateStats() {
+            const counts = { waiting: 0, running: 0, completed: 0, cancelled: 0 };
+            filteredTasks.forEach(t => { counts[t.status] = (counts[t.status] || 0) + 1; });
+
+            const total = filteredTasks.length || 1;
+
+            document.getElementById('statusStats').innerHTML = `
+                <div class="stats-item" onclick="quickStatusFilter('waiting')" style="cursor:pointer;">
+                    <div class="stats-item-left">
+                        <div class="stats-item-dot" style="background:#ffaa00;box-shadow:0 0 6px #ffaa00;"></div>
+                        <span>等待中</span>
+                    </div>
+                    <span class="stats-item-value" style="color:#ffaa00;">${counts.waiting}</span>
+                </div>
+                <div class="stats-item" onclick="quickStatusFilter('running')" style="cursor:pointer;">
+                    <div class="stats-item-left">
+                        <div class="stats-item-dot" style="background:#00b4ff;box-shadow:0 0 6px #00b4ff;"></div>
+                        <span>执行中</span>
+                    </div>
+                    <span class="stats-item-value" style="color:#00b4ff;">${counts.running}</span>
+                </div>
+                <div class="stats-item" onclick="quickStatusFilter('completed')" style="cursor:pointer;">
+                    <div class="stats-item-left">
+                        <div class="stats-item-dot" style="background:#00ff88;box-shadow:0 0 6px #00ff88;"></div>
+                        <span>已完成</span>
+                    </div>
+                    <span class="stats-item-value" style="color:#00ff88;">${counts.completed}</span>
+                </div>
+                <div class="stats-item" onclick="quickStatusFilter('cancelled')" style="cursor:pointer;">
+                    <div class="stats-item-left">
+                        <div class="stats-item-dot" style="background:#ff4444;box-shadow:0 0 6px #ff4444;"></div>
+                        <span>已取消</span>
+                    </div>
+                    <span class="stats-item-value" style="color:#ff4444;">${counts.cancelled}</span>
+                </div>
+            `;
+
+            const completed = counts.completed;
+            const totalAll = tasksData.length;
+            const rate = totalAll > 0 ? Math.round(completed / totalAll * 100) : 0;
+            const avgDur = tasksData.filter(t => t.duration > 0).reduce((s, t) => s + t.duration, 0) / (tasksData.filter(t => t.duration > 0).length || 1);
+            document.getElementById('avgTime').textContent = avgDur.toFixed(1);
+            document.getElementById('completionRate').textContent = rate;
+            document.getElementById('statEfficiency').textContent = rate;
+        }
+
+        function updateStatCards() {
+            const counts = {};
+            ['waiting', 'running', 'completed', 'cancelled'].forEach(s => {
+                counts[s] = tasksData.filter(t => t.status === s).length;
+            });
+            const total = tasksData.length;
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statWaiting').textContent = counts.waiting;
+            document.getElementById('statRunning').textContent = counts.running;
+            document.getElementById('statCompleted').textContent = counts.completed;
+            document.getElementById('statWaitingPct').textContent = (counts.waiting / total * 100).toFixed(1) + '%';
+            document.getElementById('statRunningPct').textContent = (counts.running / total * 100).toFixed(1) + '%';
+            document.getElementById('statCompletedPct').textContent = (counts.completed / total * 100).toFixed(1) + '%';
+            document.getElementById('statUrgent').textContent = tasksData.filter(t => t.priority === 'urgent').length;
+        }
+
+        function updateStatHighlight() {
+            document.querySelectorAll('.stat-card').forEach(card => {
+                card.classList.toggle('active', card.dataset.filter === currentStatusFilter);
+            });
+        }
+
+        function quickStatusFilter(status) {
+            document.getElementById('statusFilter').value = status;
+            document.getElementById('typeFilter').value = '';
+            document.getElementById('priorityFilter').value = '';
+            document.getElementById('searchInput').value = '';
+            applyFilters();
+        }
+
+        function quickPriorityFilter(priority) {
+            document.getElementById('priorityFilter').value = priority;
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('typeFilter').value = '';
+            document.getElementById('searchInput').value = '';
+            applyFilters();
+        }
+
+        // ==================== Task Detail Modal ====================
+        function showTaskDetail(taskId) {
+            selectedTaskId = taskId;
+            const task = tasksData.find(t => t.id === taskId);
+            if (!task) return;
+
+            document.getElementById('modalTaskId').textContent = task.id;
+
+            const statusBadge = document.getElementById('modalStatusBadge');
+            statusBadge.textContent = getStatusText(task.status);
+            const sColors = { waiting: { bg: 'rgba(255,170,0,0.15)', color: '#ffaa00', border: 'rgba(255,170,0,0.3)' },
+                running: { bg: 'rgba(0,180,255,0.15)', color: '#00b4ff', border: 'rgba(0,180,255,0.3)' },
+                completed: { bg: 'rgba(0,255,136,0.15)', color: '#00ff88', border: 'rgba(0,255,136,0.3)' },
+                cancelled: { bg: 'rgba(255,68,68,0.15)', color: '#ff4444', border: 'rgba(255,68,68,0.3)' } };
+            const sc = sColors[task.status];
+            statusBadge.style.cssText = `background:${sc.bg};color:${sc.color};border:1px solid ${sc.border};`;
+
+            document.getElementById('modalType').innerHTML = `<span class="tag ${task.type === 'inbound' ? 'completed' : (task.type === 'outbound' ? 'high' : 'running')}">${getTypeIcon(task.type)} ${getTypeText(task.type)}</span>`;
+            document.getElementById('modalStatus').innerHTML = `<span class="tag ${task.status}"><span class="dot ${task.status}"></span> ${getStatusText(task.status)}</span>`;
+            document.getElementById('modalFrom').textContent = task.from;
+            document.getElementById('modalTo').textContent = task.to;
+            document.getElementById('modalPriority').innerHTML = `<span class="tag ${task.priority}">${getPriorityText(task.priority)}</span>`;
+            document.getElementById('modalDevice').textContent = task.device;
+            document.getElementById('modalCreateTime').textContent = task.createTime;
+            document.getElementById('modalEta').textContent = task.duration > 0 ? `${task.duration} 分钟` : '已取消';
+            document.getElementById('modalMesOrder').textContent = task.mesOrder;
+            document.getElementById('modalOperator').textContent = task.operator;
+
+            // Timeline
+            const timeline = document.getElementById('taskTimeline');
+            if (task.status === 'cancelled') {
+                timeline.innerHTML = `
+                    <div class="timeline-item done">
+                        <div class="timeline-time">${task.createTime}</div>
+                        <div class="timeline-desc">任务创建 - ${getTypeText(task.type)}: ${task.from} → ${task.to}</div>
+                    </div>
+                    <div class="timeline-item done" style="opacity:0.6;">
+                        <div class="timeline-time">${task.createTime}</div>
+                        <div class="timeline-desc" style="color:#ff4444;">任务已取消</div>
+                    </div>
+                `;
+            } else if (task.status === 'waiting') {
+                timeline.innerHTML = `
+                    <div class="timeline-item done">
+                        <div class="timeline-time">${task.createTime}</div>
+                        <div class="timeline-desc">任务创建 - ${getTypeText(task.type)}: ${task.from} → ${task.to}</div>
+                    </div>
+                    <div class="timeline-item active">
+                        <div class="timeline-time">等待分配</div>
+                        <div class="timeline-desc">等待设备分配中...</div>
+                    </div>
+                `;
+            } else if (task.status === 'running') {
+                timeline.innerHTML = `
+                    <div class="timeline-item done">
+                        <div class="timeline-time">${task.createTime}</div>
+                        <div class="timeline-desc">任务创建 - ${getTypeText(task.type)}: ${task.from} → ${task.to}</div>
+                    </div>
+                    <div class="timeline-item done">
+                        <div class="timeline-time">${task.createTime}</div>
+                        <div class="timeline-desc">分配设备 ${task.device} - 操作人: ${task.operator}</div>
+                    </div>
+                    <div class="timeline-item active">
+                        <div class="timeline-time">进行中</div>
+                        <div class="timeline-desc">预计剩余 ${task.duration} 分钟</div>
+                    </div>
+                `;
+            } else {
+                timeline.innerHTML = `
+                    <div class="timeline-item done">
+                        <div class="timeline-time">${task.createTime}</div>
+                        <div class="timeline-desc">任务创建</div>
+                    </div>
+                    <div class="timeline-item done">
+                        <div class="timeline-time">${task.createTime}</div>
+                        <div class="timeline-desc">设备 ${task.device} 开始执行</div>
+                    </div>
+                    <div class="timeline-item done">
+                        <div class="timeline-time">${task.createTime.slice(0, 10)} ${String(parseInt(task.createTime.slice(11, 13)) + Math.ceil(task.duration / 60)).padStart(2, '0')}:${task.createTime.slice(14, 16)}:${task.createTime.slice(17)}</div>
+                        <div class="timeline-desc">任务完成 ✓</div>
+                    </div>
+                `;
+            }
+
+            // Show/hide action buttons
+            document.getElementById('btnCancelWaiting').style.display = task.status === 'waiting' ? '' : 'none';
+            document.getElementById('btnCancelRunning').style.display = task.status === 'running' ? '' : 'none';
+
+            document.getElementById('taskModal').classList.add('active');
+        }
+
+        function closeTaskModal() {
+            document.getElementById('taskModal').classList.remove('active');
+            selectedTaskId = null;
+        }
+
+        function cancelWaitingTask() {
+            if (selectedTaskId) {
+                const task = tasksData.find(function(t) { return t.id === selectedTaskId; });
+                if (task && task.status === 'waiting') {
+                    if (confirm('确认取消任务 ' + selectedTaskId + '？')) {
+                        task.status = 'cancelled';
+                        task.device = '-';
+                        task.duration = 0;
+                        applyFilters();
+                        closeTaskModal();
+                    }
+                }
+            }
+        }
+
+        function cancelRunningTask() {
+            if (selectedTaskId) {
+                const task = tasksData.find(function(t) { return t.id === selectedTaskId; });
+                if (task && task.status === 'running') {
+                    if (confirm('确认终止任务 ' + selectedTaskId + '？')) {
+                        task.status = 'cancelled';
+                        task.device = '-';
+                        task.duration = 0;
+                        applyFilters();
+                        closeTaskModal();
+                    }
+                }
+            }
+        }
+
+        // ==================== Helper ====================
+        function getTypeIcon(type) {
+            return { inbound: '↓', outbound: '↑', transfer: '↔' }[type] || '•';
+        }
+
+        function getTypeText(type) {
+            return { inbound: '入库', outbound: '出库', transfer: '移库' }[type] || type;
+        }
+
+        function getStatusText(status) {
+            return { waiting: '等待中', running: '执行中', completed: '已完成', cancelled: '已取消' }[status] || status;
+        }
+
+        function getPriorityText(priority) {
+            return { urgent: '紧急', high: '高', normal: '普通', low: '低' }[priority] || priority;
+        }
+
+        // ==================== Charts ====================
+        let typeChart = null, trendChart = null;
+
+        function initCharts() {
+            typeChart = echarts.init(document.getElementById('typeChart'));
+            const typeCount = { inbound: 0, outbound: 0, transfer: 0 };
+            tasksData.forEach(t => { typeCount[t.type]++; });
+
+            typeChart.setOption({
+                tooltip: { trigger: 'item', backgroundColor: 'rgba(0,40,80,0.9)', borderColor: 'rgba(0,180,255,0.3)', textStyle: { color: '#fff', fontSize: 11 } },
+                series: [{
+                    type: 'pie', radius: ['45%', '75%'], center: ['50%', '50%'],
+                    itemStyle: { borderRadius: 6, borderColor: 'rgba(0,40,80,0.9)', borderWidth: 3 },
+                    label: { show: true, color: 'rgba(255,255,255,0.75)', fontSize: 10, formatter: '{b}\n{d}%' },
+                    data: [
+                        { value: typeCount.inbound, name: '入库', itemStyle: { color: '#00ff88' } },
+                        { value: typeCount.outbound, name: '出库', itemStyle: { color: '#ff6b9d' } },
+                        { value: typeCount.transfer, name: '移库', itemStyle: { color: '#8a6bff' } },
+                    ],
+                }],
+            });
+
+            trendChart = echarts.init(document.getElementById('trendChart'));
+            const hours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00'];
+            const completedData = [12, 18, 25, 30, 22, 28, 35];
+            const createdData = [25, 30, 35, 42, 38, 45, 50];
+
+            trendChart.setOption({
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,40,80,0.9)', borderColor: 'rgba(0,180,255,0.3)', textStyle: { color: '#fff', fontSize: 11 } },
+                legend: { data: ['新增任务', '完成任务'], textStyle: { color: 'rgba(255,255,255,0.7)', fontSize: 10 }, top: 0, itemWidth: 10, itemHeight: 6 },
+                grid: { left: 35, right: 10, top: 30, bottom: 20 },
+                xAxis: { type: 'category', data: hours,
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.15)' } },
+                    axisLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 9 } },
+                yAxis: { type: 'value',
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
+                    axisLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 9 } },
+                series: [
+                    { name: '新增任务', type: 'bar', data: createdData, barWidth: 10,
+                        itemStyle: { color: '#00b4ff', borderRadius: [3,3,0,0] } },
+                    { name: '完成任务', type: 'line', data: completedData, smooth: true, symbol: 'circle', symbolSize: 4,
+                        lineStyle: { color: '#00ff88', width: 2 },
+                        itemStyle: { color: '#00ff88' } },
+                ],
+            });
+        }
+
+        // ==================== Simulation ====================
+        function simulateNewTask() {
+            const types = ['inbound', 'outbound', 'transfer'];
+            const statuses = ['waiting', 'running'];
+            const priorities = ['urgent', 'high', 'normal', 'low'];
+            const froms = ['入库区-A01', '缓存区-C03', '检验区-D02', '包装区-E05', '分拣区-F04'];
+            const tos = ['缓存区-C08', '出库区-B03', '检验区-D06', '包装区-E02', '出库区-B01'];
+            const operators = ['张三', '李四', '王五', '赵六', '钱七'];
+
+            const newId = 'TSK-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + String(tasksData.length + 1).padStart(3, '0');
+            const now = new Date();
+            const timeStr = now.toISOString().slice(0, 19).replace('T', ' ');
+            const status = statuses[Math.floor(Math.random() * statuses.length)];
+
+            tasksData.unshift({
+                id: newId, type: types[Math.floor(Math.random() * 3)],
+                from: froms[Math.floor(Math.random() * 5)], to: tos[Math.floor(Math.random() * 5)],
+                status: status, priority: priorities[Math.floor(Math.random() * 4)],
+                createTime: timeStr,
+                device: status === 'running' ? 'RGV-0' + (Math.floor(Math.random() * 8) + 1) : '-',
+                duration: Math.floor(Math.random() * 30) + 10,
+                operator: status === 'running' ? operators[Math.floor(Math.random() * 5)] : '-',
+                mesOrder: 'MES-' + now.toISOString().slice(0, 10).replace(/-/g, '') + '-' + String(tasksData.length + 1).padStart(3, '0'),
+            });
+
+            if (tasksData.length > 50) tasksData.pop();
+            applyFilters();
+        }
+
+        // ==================== Keyboard ====================
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeTaskModal();
+        });
+
+        // ==================== Initialize ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            applyFilters();
+            initCharts();
+            updateStatCards();
+
+            setInterval(simulateNewTask, 10000);
+        });
+
+        document.getElementById('taskModal').addEventListener('click', (e) => {
+            if (e.target.id === 'taskModal') closeTaskModal();
+        });
+
+        window.addEventListener('resize', () => {
+            [typeChart, trendChart, ganttChart].forEach(c => { if (c) c.resize(); });
+        });
+    </script>
+</body>
+</html>

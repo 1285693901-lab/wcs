@@ -207,11 +207,102 @@
 
         /* Main Content */
         .main-content {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: 1fr 380px;
             gap: 20px;
             flex: 1;
             min-height: 0;
+        }
+
+        .left-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-height: 0;
+        }
+
+        /* Right Panel - Stats */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-height: 0;
+        }
+
+        .stats-card {
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stats-card:last-child {
+            flex: 1;
+            min-height: 0;
+        }
+
+        .stats-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.15);
+        }
+
+        .stats-card-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 180, 255, 0.15);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stats-card-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: #00b4ff;
+        }
+
+        .stats-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .stats-chart {
+            height: 200px;
+        }
+
+        .stats-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .stats-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: rgba(0, 30, 60, 0.5);
+            border-radius: 8px;
+        }
+
+        .stats-item-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .stats-item-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #00b4ff;
         }
 
         /* Filter Bar */
@@ -558,6 +649,30 @@
             margin-bottom: 24px;
         }
 
+        .transport-detail-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #00b4ff;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: linear-gradient(180deg, #00b4ff, #0088ff);
+            border-radius: 2px;
+        }
+
         .modal-actions {
             display: flex;
             gap: 12px;
@@ -639,41 +754,81 @@
 
             <div class="nav-buttons">
                 <a href="wcs-dashboard.html" class="nav-btn">环线总览</a>
+                <a href="wcs-dashboard-enhanced.html" class="nav-btn">总览增强</a>
                 <a href="wcs-tasks.html" class="nav-btn">任务监控</a>
+                <a href="wcs-tasks-enhanced.html" class="nav-btn">任务增强</a>
                 <a href="wcs-devices.html" class="nav-btn active">设备管理</a>
+                <a href="wcs-devices-enhanced.html" class="nav-btn">设备增强</a>
             </div>
             <h1>环线WCS物流跟踪系统</h1>
             <div class="header-subtitle">DEVICE MANAGER</div>
         </header>
 
         <div class="main-content">
-            <!-- Filter Bar -->
-            <div class="filter-bar">
-                <div class="filter-group">
-                    <span class="filter-label">设备类型:</span>
-                    <select class="filter-select" id="typeFilter">
-                        <option value="">全部</option>
-                        <option value="rgv">穿梭车</option>
-                        <option value="lifter">提升机</option>
-                        <option value="conveyor">传送带</option>
-                    </select>
+            <div class="left-section">
+                <!-- Filter Bar -->
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <span class="filter-label">设备类型:</span>
+                        <select class="filter-select" id="typeFilter">
+                            <option value="">全部</option>
+                            <option value="rgv">穿梭车</option>
+                            <option value="lifter">提升机</option>
+                            <option value="conveyor">传送带</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <span class="filter-label">设备状态:</span>
+                        <select class="filter-select" id="statusFilter">
+                            <option value="">全部</option>
+                            <option value="running">运行中</option>
+                            <option value="standby">待机</option>
+                            <option value="fault">故障</option>
+                            <option value="offline">离线</option>
+                        </select>
+                    </div>
+                    <button class="filter-btn" onclick="applyFilters()">应用筛选</button>
                 </div>
-                <div class="filter-group">
-                    <span class="filter-label">设备状态:</span>
-                    <select class="filter-select" id="statusFilter">
-                        <option value="">全部</option>
-                        <option value="running">运行中</option>
-                        <option value="standby">待机</option>
-                        <option value="fault">故障</option>
-                        <option value="offline">离线</option>
-                    </select>
+
+                <!-- Device Grid -->
+                <div class="device-grid" id="deviceGrid">
+                    <!-- Devices will be rendered here -->
                 </div>
-                <button class="filter-btn" onclick="applyFilters()">应用筛选</button>
             </div>
 
-            <!-- Device Grid -->
-            <div class="device-grid" id="deviceGrid">
-                <!-- Devices will be rendered here -->
+            <!-- Right Panel - Stats -->
+            <div class="right-panel">
+                <div class="stats-card">
+                    <div class="stats-card-header">
+                        <div class="stats-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                        </div>
+                        <div class="stats-card-title">设备类型分布</div>
+                    </div>
+                    <div class="stats-chart" id="typeChart"></div>
+                </div>
+
+                <div class="stats-card">
+                    <div class="stats-card-header">
+                        <div class="stats-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                        </div>
+                        <div class="stats-card-title">设备状态统计</div>
+                    </div>
+                    <div class="stats-list" id="statusStats">
+                        <!-- Stats will be rendered here -->
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <div class="stats-card-header">
+                        <div class="stats-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+                        </div>
+                        <div class="stats-card-title">今日设备趋势</div>
+                    </div>
+                    <div class="stats-chart" id="trendChart"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -688,38 +843,58 @@
                 </div>
             </div>
             <div class="modal-body">
-                <div class="device-detail-grid">
-                    <div class="detail-item">
-                        <div class="detail-label">设备名称</div>
-                        <div class="detail-value" id="modalDeviceName">-</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">设备类型</div>
-                        <div class="detail-value" id="modalDeviceType">-</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">当前状态</div>
-                        <div class="detail-value" id="modalDeviceStatus">-</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">当前位置</div>
-                        <div class="detail-value" id="modalDevicePosition">-</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">累计里程</div>
-                        <div class="detail-value" id="modalDeviceMileage">-</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">运行时长</div>
-                        <div class="detail-value" id="modalDeviceRuntime">-</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">最后通讯</div>
-                        <div class="detail-value" id="modalDeviceLastComm">-</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">IP地址</div>
-                        <div class="detail-value" id="modalDeviceIP">-</div>
+                <!-- 运输详情 -->
+                <div class="transport-detail-section">
+                    <div class="section-title">运输详情</div>
+                    <div class="device-detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">设备名称</div>
+                            <div class="detail-value" id="modalDeviceName">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">当前状态</div>
+                            <div class="detail-value" id="modalDeviceStatus">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">当前位置/坐标点</div>
+                            <div class="detail-value" id="modalDevicePosition">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">当前运送物资</div>
+                            <div class="detail-value" id="modalCargo">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">数量</div>
+                            <div class="detail-value" id="modalQuantity">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">关联MES订单</div>
+                            <div class="detail-value" id="modalMesOrder">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">发起时间</div>
+                            <div class="detail-value" id="modalStartTime">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">已运送时间</div>
+                            <div class="detail-value" id="modalElapsedTime">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">预计到达时间</div>
+                            <div class="detail-value" id="modalEta">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">目的地-线段岗位</div>
+                            <div class="detail-value" id="modalDestination">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">操作人</div>
+                            <div class="detail-value" id="modalOperator">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">最后通讯</div>
+                            <div class="detail-value" id="modalDeviceLastComm">-</div>
+                        </div>
                     </div>
                 </div>
                 <div class="chart-container" id="deviceChart"></div>
@@ -735,14 +910,14 @@
     <script>
         // Mock Data
         const devicesData = [
-            { id: 'RGV-01', name: '穿梭车-01', type: 'rgv', typeName: '穿梭车', status: 'running', position: '环线-A段', mileage: 12456, runtime: '2,456小时', lastComm: '2024-03-23 14:32:15', ip: '192.168.1.101' },
-            { id: 'RGV-02', name: '穿梭车-02', type: 'rgv', typeName: '穿梭车', status: 'running', position: '环线-B段', mileage: 9876, runtime: '1,876小时', lastComm: '2024-03-23 14:31:42', ip: '192.168.1.102' },
-            { id: 'RGV-03', name: '穿梭车-03', type: 'rgv', typeName: '穿梭车', status: 'standby', position: '入库区', mileage: 15234, runtime: '3,234小时', lastComm: '2024-03-23 14:30:18', ip: '192.168.1.103' },
-            { id: 'RGV-04', name: '穿梭车-04', type: 'rgv', typeName: '穿梭车', status: 'running', position: '环线-C段', mileage: 8765, runtime: '1,765小时', lastComm: '2024-03-23 14:32:01', ip: '192.168.1.104' },
-            { id: 'RGV-05', name: '穿梭车-05', type: 'rgv', typeName: '穿梭车', status: 'fault', position: '维修区', mileage: 23456, runtime: '4,456小时', lastComm: '2024-03-23 14:25:33', ip: '192.168.1.105' },
-            { id: 'RGV-06', name: '穿梭车-06', type: 'rgv', typeName: '穿梭车', status: 'running', position: '环线-D段', mileage: 11234, runtime: '2,234小时', lastComm: '2024-03-23 14:31:55', ip: '192.168.1.106' },
-            { id: 'RGV-07', name: '穿梭车-07', type: 'rgv', typeName: '穿梭车', status: 'running', position: '环线-E段', mileage: 7654, runtime: '1,654小时', lastComm: '2024-03-23 14:32:08', ip: '192.168.1.107' },
-            { id: 'RGV-08', name: '穿梭车-08', type: 'rgv', typeName: '穿梭车', status: 'standby', position: '缓存区', mileage: 18987, runtime: '3,987小时', lastComm: '2024-03-23 14:28:22', ip: '192.168.1.108' },
+            { id: 'RGV-01', name: '穿梭车-01', type: 'rgv', typeName: '穿梭车', status: 'running', position: '钣喷车间', mileage: 12456, runtime: '2,456小时', lastComm: '2024-03-23 14:32:15', ip: '192.168.1.101' },
+            { id: 'RGV-02', name: '穿梭车-02', type: 'rgv', typeName: '穿梭车', status: 'running', position: '注塑车间', mileage: 9876, runtime: '1,876小时', lastComm: '2024-03-23 14:31:42', ip: '192.168.1.102' },
+            { id: 'RGV-03', name: '穿梭车-03', type: 'rgv', typeName: '穿梭车', status: 'standby', position: '成品仓库', mileage: 15234, runtime: '3,234小时', lastComm: '2024-03-23 14:30:18', ip: '192.168.1.103' },
+            { id: 'RGV-04', name: '穿梭车-04', type: 'rgv', typeName: '穿梭车', status: 'running', position: '总装外4线', mileage: 8765, runtime: '1,765小时', lastComm: '2024-03-23 14:32:01', ip: '192.168.1.104' },
+            { id: 'RGV-05', name: '穿梭车-05', type: 'rgv', typeName: '穿梭车', status: 'fault', position: '总装外5线', mileage: 23456, runtime: '4,456小时', lastComm: '2024-03-23 14:25:33', ip: '192.168.1.105' },
+            { id: 'RGV-06', name: '穿梭车-06', type: 'rgv', typeName: '穿梭车', status: 'running', position: '两器车间', mileage: 11234, runtime: '2,234小时', lastComm: '2024-03-23 14:31:55', ip: '192.168.1.106' },
+            { id: 'RGV-07', name: '穿梭车-07', type: 'rgv', typeName: '穿梭车', status: 'running', position: '控制器车间', mileage: 7654, runtime: '1,654小时', lastComm: '2024-03-23 14:32:08', ip: '192.168.1.107' },
+            { id: 'RGV-08', name: '穿梭车-08', type: 'rgv', typeName: '穿梭车', status: 'standby', position: '物资库1', mileage: 18987, runtime: '3,987小时', lastComm: '2024-03-23 14:28:22', ip: '192.168.1.108' },
             { id: 'LIFT-01', name: '提升机-01', type: 'lifter', typeName: '提升机', status: 'running', position: '入库提升', mileage: 5678, runtime: '1,678小时', lastComm: '2024-03-23 14:32:10', ip: '192.168.1.201' },
             { id: 'LIFT-02', name: '提升机-02', type: 'lifter', typeName: '提升机', status: 'running', position: '出库提升', mileage: 6234, runtime: '1,834小时', lastComm: '2024-03-23 14:31:58', ip: '192.168.1.202' },
             { id: 'CONV-01', name: '传送带-01', type: 'conveyor', typeName: '传送带', status: 'running', position: '入库线', mileage: 0, runtime: '2,100小时', lastComm: '2024-03-23 14:32:12', ip: '192.168.1.301' },
@@ -752,6 +927,8 @@
         let filteredDevices = [...devicesData];
         let selectedDevice = null;
         let deviceChart = null;
+        let typeChart = null;
+        let trendChart = null;
 
         // Get status color
         function getStatusColor(status) {
@@ -843,21 +1020,50 @@
             renderDeviceGrid();
         }
 
+        // Mock transport data for devices
+        function getTransportData(device) {
+            const cargos = ['电子元件A', '机械零件B', '成品组件C', '原材料D', '半成品E'];
+            const destinations = ['入库区-A01', '出库区-B03', '缓存区-C05', '检验区-D02', '包装区-E08'];
+            const operators = ['张三', '李四', '王五', '赵六', '钱七'];
+
+            // Generate deterministic pseudo-random data based on device id
+            const seed = device.id.charCodeAt(device.id.length - 1);
+
+            return {
+                cargo: cargos[seed % cargos.length],
+                quantity: (seed % 50 + 10) + ' 件',
+                mesOrder: 'MES-' + (202403000 + seed),
+                startTime: '2024-03-23 ' + (8 + seed % 8).toString().padStart(2, '0') + ':' + (seed % 60).toString().padStart(2, '0') + ':00',
+                elapsedTime: (seed % 30 + 5) + ' 分钟',
+                eta: '2024-03-23 ' + (16 + seed % 4).toString().padStart(2, '0') + ':' + (seed % 60).toString().padStart(2, '0'),
+                destination: destinations[seed % destinations.length],
+                operator: operators[seed % operators.length]
+            };
+        }
+
         // Show Device Modal
         function showDeviceModal(deviceId) {
             selectedDevice = devicesData.find(d => d.id === deviceId);
             if (!selectedDevice) return;
 
+            const transportData = getTransportData(selectedDevice);
+
             document.getElementById('modalTitle').textContent = selectedDevice.name;
             document.getElementById('modalDeviceName').textContent = selectedDevice.name;
-            document.getElementById('modalDeviceType').textContent = selectedDevice.typeName;
             document.getElementById('modalDeviceStatus').textContent = getStatusText(selectedDevice.status);
             document.getElementById('modalDeviceStatus').className = `detail-value status-${selectedDevice.status}`;
             document.getElementById('modalDevicePosition').textContent = selectedDevice.position;
-            document.getElementById('modalDeviceMileage').textContent = selectedDevice.mileage > 0 ? selectedDevice.mileage.toLocaleString() + ' km' : '-';
-            document.getElementById('modalDeviceRuntime').textContent = selectedDevice.runtime;
             document.getElementById('modalDeviceLastComm').textContent = selectedDevice.lastComm;
-            document.getElementById('modalDeviceIP').textContent = selectedDevice.ip;
+
+            // Transport details
+            document.getElementById('modalCargo').textContent = transportData.cargo;
+            document.getElementById('modalQuantity').textContent = transportData.quantity;
+            document.getElementById('modalMesOrder').textContent = transportData.mesOrder;
+            document.getElementById('modalStartTime').textContent = transportData.startTime;
+            document.getElementById('modalElapsedTime').textContent = transportData.elapsedTime;
+            document.getElementById('modalEta').textContent = transportData.eta;
+            document.getElementById('modalDestination').textContent = transportData.destination;
+            document.getElementById('modalOperator').textContent = transportData.operator;
 
             document.getElementById('deviceModal').classList.add('active');
 
@@ -997,10 +1203,172 @@
             }
         }
 
+        // Initialize Stats Charts
+        function initTypeChart() {
+            const chartDom = document.getElementById('typeChart');
+            if (!chartDom) return;
+            typeChart = echarts.init(chartDom);
+
+            const typeCount = {
+                '穿梭车': devicesData.filter(d => d.type === 'rgv').length,
+                '提升机': devicesData.filter(d => d.type === 'lifter').length,
+                '传送带': devicesData.filter(d => d.type === 'conveyor').length
+            };
+
+            typeChart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: 'rgba(0, 40, 80, 0.9)',
+                    borderColor: 'rgba(0, 180, 255, 0.3)',
+                    textStyle: { color: '#fff' }
+                },
+                legend: {
+                    orient: 'vertical',
+                    right: 10,
+                    top: 'center',
+                    textStyle: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 12 }
+                },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    center: ['35%', '50%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 8,
+                        borderColor: 'rgba(0, 40, 80, 0.9)',
+                        borderWidth: 2
+                    },
+                    label: { show: false },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: 14,
+                            fontWeight: 'bold',
+                            color: '#fff'
+                        }
+                    },
+                    data: [
+                        { value: typeCount['穿梭车'], name: '穿梭车', itemStyle: { color: '#00b4ff' } },
+                        { value: typeCount['提升机'], name: '提升机', itemStyle: { color: '#00ff88' } },
+                        { value: typeCount['传送带'], name: '传送带', itemStyle: { color: '#ffaa00' } }
+                    ]
+                }]
+            });
+        }
+
+        function renderStatusStats() {
+            const statusCount = {
+                'running': devicesData.filter(d => d.status === 'running').length,
+                'standby': devicesData.filter(d => d.status === 'standby').length,
+                'fault': devicesData.filter(d => d.status === 'fault').length,
+                'offline': devicesData.filter(d => d.status === 'offline').length
+            };
+
+            const statusMap = {
+                'running': { name: '运行中', color: '#00ff88' },
+                'standby': { name: '待机', color: '#ffaa00' },
+                'fault': { name: '故障', color: '#ff4444' },
+                'offline': { name: '离线', color: '#666666' }
+            };
+
+            const statsList = document.getElementById('statusStats');
+            if (statsList) {
+                statsList.innerHTML = Object.entries(statusCount).map(([status, count]) => `
+                    <div class="stats-item">
+                        <span class="stats-item-label" style="display: flex; align-items: center; gap: 8px;">
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background: ${statusMap[status].color};"></span>
+                            ${statusMap[status].name}
+                        </span>
+                        <span class="stats-item-value" style="color: ${statusMap[status].color};">${count} 台</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function initTrendChart() {
+            const chartDom = document.getElementById('trendChart');
+            if (!chartDom) return;
+            trendChart = echarts.init(chartDom);
+
+            const hours = Array.from({ length: 12 }, (_, i) => `${i * 2}:00`);
+            const runningData = [8, 9, 10, 11, 10, 9, 8, 7, 8, 9, 10, 11];
+            const faultData = [1, 0, 1, 0, 1, 2, 1, 1, 0, 1, 0, 1];
+
+            trendChart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(0, 40, 80, 0.9)',
+                    borderColor: 'rgba(0, 180, 255, 0.3)',
+                    textStyle: { color: '#fff' }
+                },
+                legend: {
+                    data: ['运行中', '故障'],
+                    textStyle: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 11 },
+                    top: 0,
+                    itemWidth: 12,
+                    itemHeight: 8
+                },
+                grid: {
+                    left: 40,
+                    right: 15,
+                    top: 35,
+                    bottom: 25
+                },
+                xAxis: {
+                    type: 'category',
+                    data: hours,
+                    axisLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.2)' } },
+                    axisLabel: { color: 'rgba(255, 255, 255, 0.6)', fontSize: 10 }
+                },
+                yAxis: {
+                    type: 'value',
+                    splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)' } },
+                    axisLabel: { color: 'rgba(255, 255, 255, 0.6)', fontSize: 10 }
+                },
+                series: [
+                    {
+                        name: '运行中',
+                        type: 'line',
+                        data: runningData,
+                        smooth: true,
+                        symbol: 'circle',
+                        symbolSize: 4,
+                        lineStyle: { color: '#00ff88', width: 2 },
+                        itemStyle: { color: '#00ff88' },
+                        areaStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 0, y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: 'rgba(0, 255, 136, 0.3)' },
+                                    { offset: 1, color: 'rgba(0, 255, 136, 0)' }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        name: '故障',
+                        type: 'line',
+                        data: faultData,
+                        smooth: true,
+                        symbol: 'circle',
+                        symbolSize: 4,
+                        lineStyle: { color: '#ff4444', width: 2 },
+                        itemStyle: { color: '#ff4444' }
+                    }
+                ]
+            });
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             renderDeviceGrid();
-            
+            initTypeChart();
+            renderStatusStats();
+            initTrendChart();
+
             // Simulate changes every 10 seconds
             setInterval(simulateDeviceChanges, 10000);
         });
@@ -1016,6 +1384,12 @@
         window.addEventListener('resize', () => {
             if (deviceChart) {
                 deviceChart.resize();
+            }
+            if (typeChart) {
+                typeChart.resize();
+            }
+            if (trendChart) {
+                trendChart.resize();
             }
         });
     </script>
